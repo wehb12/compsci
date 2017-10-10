@@ -202,9 +202,7 @@ struct node* find_parent(struct node* root, int* par_dir, int value)
 //		else
 //		{
 //			tree->value = temp->value;
-//			temp = inorder_successor;		//could delete in order successor by pointer?
-//											//use the while loop here?
-//											//could definitely restructure to work, I think
+//			temp = inorder_successor;
 //
 //		}
 //	}
