@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "iostream"
+#include <stack>
 
 using namespace std;
 
@@ -14,10 +15,10 @@ struct node
 };
 
 void insert_integer(struct node* tree, int value);
-void print_tree(struct node* tree);
-//void terminate_tree(struct node* tree);
 
-struct node* find_parent(struct node* root, int* par_dir, int value);
+void print_tree(struct node* tree);
+
+void terminate_tree(struct node* tree);
 
 int main()
 {
@@ -37,8 +38,8 @@ int main()
 	insert_integer(root, 7);
 
 	print_tree(root);
-	//terminate_tree(root);
-	//cout << "DELETED" << endl;
+	terminate_tree(root);
+	cout << "DELETED" << endl;
 	return 0;
 }
 
@@ -77,95 +78,71 @@ void insert_integer(struct node* tree, int value)
 	}
 }
 
-void print_tree(struct node* tree)
+void print_tree(struct node* root)
 {
-	node* root = tree;
-	node* leaf = tree;
+	struct node temp = { 0 };
+	stack<node> treeStack;
 
-	int par_dir = 0;	//parent direction = 0 for not a parent = 1 for right handed parent = 2 for left handed parent = 3 for root
-
-	if (leaf == NULL)
+	if (root == NULL)
 		return;
 
-	while (par_dir != 3)
+	treeStack.push(*root);
+
+	while (!treeStack.empty())
 	{
-		switch(par_dir)
+		if (treeStack.top().right != NULL)
 		{
-			case 0:
-				if (leaf->left != NULL)
-				{
-					leaf = leaf->left;
-					par_dir = 0;
-				}
-				else
-				{
-					cout << leaf->value << endl;
-					if (leaf->right != NULL)
-						leaf = leaf->right;
-					else
-						leaf = find_parent(root, &par_dir, leaf->value);
-				}
-				break;
-			case 1:
-				cout << leaf->value << endl;
-				if (leaf->right != NULL)
-				{
-					leaf = leaf->right;
-					par_dir = 0;
-				}
-				else
-					leaf = find_parent(root, &par_dir, leaf->value);
-				break;
-			case 2:
-				leaf = find_parent(root, &par_dir, leaf->value);
-				break;
+			temp = treeStack.top();
+			treeStack.pop();
+			treeStack.push(*temp.right);
+			treeStack.push(temp);
+			treeStack.top().right = NULL;
+		}
+		else if (treeStack.top().left != NULL)
+		{
+			temp = *treeStack.top().left;
+			treeStack.top().left = NULL;
+			treeStack.push(temp);
+		}
+		else
+		{
+			cout << treeStack.top().value << endl;
+			treeStack.pop();
 		}
 	}
 }
 
-//this function finds the parent of a node with value = value,
-//sets the par_dir (parent direction) flag and then returns the parent node
-struct node* find_parent(struct node* root, int* par_dir, int value)
+void terminate_tree(struct node* root)
 {
-	struct node* tree = root;
+	struct node* temp = { 0 };
 
-	int ans = 3;
+	stack<node*> tree;
 
-	while (1)
+	if (root == NULL)
+		return;
+
+	tree.push(root);
+
+	while (!tree.empty())
 	{
-		if (tree->value >= value)
+		if (tree.top()->right != NULL)
 		{
-			if (tree->value == value)
-			{
-				*par_dir = 3;
-				return tree;
-			}
-			else if (tree->left->value != value)
-				tree = tree->left;
-			else if (tree->left->value == value)
-			{
-				*par_dir =  1;
-				return tree;
-			}
+			temp = tree.top();
+			tree.pop();
+			tree.push(temp->right);
+			tree.push(temp);
+			tree.top()->right = NULL;
 		}
-		else if (tree->value < value)
+		else if (tree.top()->left != NULL)
 		{
-			if (tree->right->value != value)
-				tree = tree->right;
-			else if (tree->right->value == value)
-			{
-				*par_dir =  2;
-				return tree;
-			}
+			temp = tree.top()->left;
+			tree.top()->left = NULL;
+			tree.push(temp);
+		}
+		else
+		{
+			delete tree.top();
+			tree.pop();
 		}
 	}
 }
-
-//void terminate_tree(struct node* tree)
-//{
-//	if (leaf->left != NULL)
-//		terminate_leaf(leaf->left);
-//	if (leaf->right != NULL)
-//		terminate_leaf(leaf->right);
-//	delete leaf;
-//}
