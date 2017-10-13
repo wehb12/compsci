@@ -94,23 +94,22 @@ void BST::terminate_tree(struct node* tree)
 	populated = 0;
 }
 
-bool BST::find(struct node* tree, int value)
+bool BST::find(struct node* tree, const int value)
 {
 	if (tree->value == value)
 		return true;
 	else if (tree->value > value)
 	{
 		if (tree->left != NULL)
-			find(tree->left, value);
+			return find(tree->left, value);
 		else return false;
 	}
-	else if (tree->value < value)
+	else
 	{
 		if (tree->right != NULL)
-			find(tree->right, value);
+			return find(tree->right, value);
 		else return false;
 	}
-
 }
 
 node* BST::get_root()
