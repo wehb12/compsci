@@ -1,4 +1,4 @@
-// comparables.cpp : Defines the entry point for the console application.
+// tree.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
@@ -17,6 +17,7 @@ class Data : public Comparable
 public:
 	Data() : value(0) { }
 	Data(int val) : value(val) { }
+	~Data() { }
 	int get_value() { return value; }
 	void set_value(int val) { value = val; }
 	virtual int compare_to(const Comparable& rhs) override;
@@ -47,45 +48,50 @@ Data& Data::operator=(const Comparable& rhs)
 	value = d->value;
 }
 
+template <typename T>
 struct node
 {
-	Data value;
+	T value;
 	struct node* left;
 	struct node* right;
 };
 
+template <typename T>
 class BST
 {
 public:
 	static const int defValue = 0;
 	BST(int value = defValue);
 	~BST();
-	void insert_integer(struct node* tree, const Comparable& leaf);
-	void print_tree(struct node* tree);
-	void terminate_tree(struct node* tree);
-	bool find(struct node* tree, const Comparable& leaf);
-	node* get_root();
+	void insert_integer(struct node<T>* tree, const T& leaf);
+	void print_tree(struct node<T>* tree);
+	void terminate_tree(struct node<T>* tree);
+	bool find(struct node<T>* tree, const T& leaf);
+	node<T>* get_root();
 private:
 	int populated;
-	node* root;
+	node<T>* root;
 };
 
-BST::BST(int value)
+template <typename T>
+BST<T>::BST(int value)
 {
-	root = new node;
+	root = new node<T>;
 	root->value.set_value(value);
 	root->right = NULL;
 	root->left = NULL;
 	populated = 1;
 }
 
-BST::~BST()
+template <typename T>
+BST<T>::~BST()
 {
 	if (populated != 0)
 		terminate_tree(root);
 }
 
-void BST::insert_integer(struct node* tree, const Comparable& leaf)
+template <typename T>
+void BST<T>::insert_integer(struct node<T>* tree, const T& leaf)
 {
 	populated = 1;
 	int comparison = tree->value.compare_to(leaf);
@@ -96,7 +102,7 @@ void BST::insert_integer(struct node* tree, const Comparable& leaf)
 			insert_integer(tree->right, leaf);
 		else
 		{
-			tree->right = new node;
+			tree->right = new node<T>;
 			tree->right->value = leaf;
 			tree->right->left = NULL;
 			tree->right->right = NULL;
@@ -108,7 +114,7 @@ void BST::insert_integer(struct node* tree, const Comparable& leaf)
 			insert_integer(tree->left, leaf);
 		else
 		{
-			tree->left = new node;
+			tree->left = new node<T>;
 			tree->left->value = leaf;
 			tree->left->left = NULL;
 			tree->left->right = NULL;
@@ -116,7 +122,8 @@ void BST::insert_integer(struct node* tree, const Comparable& leaf)
 	}
 }
 
-void BST::print_tree(struct node* tree)
+template <typename T>
+void BST<T>::print_tree(struct node<T>* tree)
 {
 	if (tree->left != NULL)
 		print_tree(tree->left);
@@ -125,7 +132,8 @@ void BST::print_tree(struct node* tree)
 		print_tree(tree->right);
 }
 
-void BST::terminate_tree(struct node* tree)
+template <typename T>
+void BST<T>::terminate_tree(struct node<T>* tree)
 {
 	if (tree->left != NULL)
 		terminate_tree(tree->left);
@@ -136,7 +144,8 @@ void BST::terminate_tree(struct node* tree)
 	populated = 0;
 }
 
-bool BST::find(struct node* tree, const Comparable& leaf)
+template <typename T>
+bool BST<T>::find(struct node<T>* tree, const T& leaf)
 {
 	int comparison = tree->value.compare_to(leaf);
 
@@ -156,14 +165,15 @@ bool BST::find(struct node* tree, const Comparable& leaf)
 	}
 }
 
-node* BST::get_root()
+template <typename T>
+node<T>* BST<T>::get_root()
 {
 	return root;
 }
 
 int main()
 {
-	BST tree(5);
+	BST<Data> tree(5);
 
 	Data leaf1(8);
 	Data leaf2(10);
