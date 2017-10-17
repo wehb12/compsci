@@ -1,5 +1,6 @@
 // stack.cpp created by Will Hinds
 
+#include "stdafx.h"
 #include <iostream>
 
 using namespace std;
@@ -32,6 +33,7 @@ Stack<T>::~Stack()
 template <typename T>
 void Stack<T>::pop()
 {
+	*(elem + length - 1) = NULL;
 	--length;
 }
 
@@ -63,12 +65,13 @@ void Stack<T>::push(T data)
 		return;
 	}
 
-	T* buff = new T[length - 1];
+	//T* buff = new T[length - 1];
+	T* buff = elem;
 
-	for (int i = 0; i < length - 1; ++i)
-		*(buff + i) = *(elem + i);
+	//for (int i = 0; i < length - 1; ++i)
+	//	*(buff + i) = *(elem + i);
 
-	delete[] elem;
+	//delete[] elem;
 	elem = NULL;
 
 	elem = new T[length];
