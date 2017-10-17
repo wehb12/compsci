@@ -14,10 +14,10 @@ protected:
 public:
 	inline Stack() : length(0) { }
 	~Stack();
-	virtual void push(T data);// = 0;
-	void pop();
-	inline T top() { return *(elem + length - 1); }
-	inline int size() { return size; }
+	virtual void push(T data) = 0;
+	virtual void pop();
+	inline virtual T top() { return *(elem + length - 1); }
+	inline int size() { return length; }
 	bool empty();
 };
 
@@ -45,16 +45,16 @@ bool Stack<T>::empty()
 	else return false;
 }
 
-//template <typename T>
-//class StackContig : public Stack<T>
-//{
-//public:
-//    inline StackContig() : Stack<T>() { }
-//    virtual void push(T data) override;
-//};
+template <typename T>
+class StackContig : public Stack<T>
+{
+public:
+    inline StackContig() : Stack<T>() { }
+    virtual void push(T data) override;
+};
 
 template <typename T>
-void Stack<T>::push(T data)
+void StackContig<T>::push(T data)
 {
 	++length;
 
@@ -65,13 +65,8 @@ void Stack<T>::push(T data)
 		return;
 	}
 
-	//T* buff = new T[length - 1];
 	T* buff = elem;
 
-	//for (int i = 0; i < length - 1; ++i)
-	//	*(buff + i) = *(elem + i);
-
-	//delete[] elem;
 	elem = NULL;
 
 	elem = new T[length];
@@ -87,7 +82,7 @@ void Stack<T>::push(T data)
 
 int main()
 {
-	Stack<int> stack;
+	StackContig<int> stack;
 
 	stack.push(2);
 	stack.push(1);
