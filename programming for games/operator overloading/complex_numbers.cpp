@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include <iostream>
+#include "matrix.h"
 
 using namespace std;
 
@@ -12,7 +13,7 @@ class Complex
 {
 public:
 	inline Complex() : re(0), im(0) { }
-	inline Complex(int i, int r) : re(i), im(r) { }
+	inline Complex(T i, T r) : re(i), im(r) { }
 	~Complex() { }
 	Complex<T>& operator=(const Complex<T>& rhs);
 	template <typename U>
@@ -79,10 +80,36 @@ ostream& operator<<(ostream& ostr, const Complex<U>& rhs)
 
 int main()
 {
-	Complex<int> c(1, 2);
+	Matrix<Complex<int>> mtx1;
+	mtx1.set_element(0, 0, Complex<int>(5, 6));
+	mtx1.set_element(1, 1, Complex<int>(4, 3));
+	mtx1.set_element(2, 2, Complex<int>(1, 7));
+	cout << "matrix 1:\n" << mtx1;
 
-	cout << c;
+	Matrix<Complex<int>> mtx2;
+	mtx2.set_element(0, 0, Complex<int>(1, 1));
+	mtx2.set_element(1, 1, Complex<int>(2, 6));
+	mtx2.set_element(2, 2, Complex<int>(5, 2));
 
-    return 0;
+	cout << "matrix 2:\n" << mtx2;
+
+	Matrix<Complex<int>> mtx3;
+	mtx3 = mtx2;
+	cout << "matrix 3 assigned from matrix 2:\n" << mtx3;
+
+	Matrix<Complex<int>> product = (mtx1 * mtx3);
+	cout << "matrix product assigned from mtx1 * mtx3:\n" << product;
+
+	Matrix<Complex<int>> add = (mtx1 + mtx3);
+	cout << "matrix addition assigned from mtx1 + mtx3:\n" << add;
+
+	Matrix<Complex<int>> sub = (mtx3 - mtx1);
+	cout << "matrix subtraction assigned from mtx3 - mtx1:\n" << sub;
+
+	/*if (mtx3 == mtx2)
+		cout << "mtx3 == mtx2" << endl;
+	if (!(mtx3 == mtx1))
+		cout << "mtx3 != mtx1";*/
+
+	return 0;
 }
-
