@@ -20,6 +20,8 @@ int main()
 	++strats;
 
 	seed = 100;//rand() % 500;
+	if (seed == 0)
+		seed = 1;
 
 	string id = "strat";
 	id += to_string(strats);
@@ -34,7 +36,12 @@ int main()
 	{
 		strat << line << ' ';
 
-		int randNum = pow(seed, line);
+		float exp = line;
+		float maxExp = log(2100000000) / log(seed);
+		while (exp > maxExp)
+			exp -= maxExp;
+
+		int randNum = pow(seed, exp);
 		randNum = randNum % 72;
 
 		if (randNum >= 36)	// print an exit condition
@@ -69,7 +76,11 @@ int main()
 
 				while (!exitFlag)
 				{
-					int temp = pow(tempNum, line);
+					float maxExp = log(2100000000) / log(tempNum);
+					while ((exp > maxExp) && tempNum)
+						exp -= maxExp;
+
+					int temp = pow(tempNum, exp);
 					temp = temp % 200;
 
 					if (tempNum <= 11)
@@ -77,11 +88,11 @@ int main()
 					else
 					{
 						strat << "ALLOUTCOMES_";
-						if (tempNum <= 26)
-							strat << "W";
-						else if (tempNum <= 29)
+						if (tempNum <= 14)
+							strat << "W ";
+						else if (tempNum <= 17)
 							strat << "X ";
-						else if (tempNum <= 32)
+						else if (tempNum <= 20)
 							strat << "Y ";
 						else
 							strat << "Z ";
@@ -110,7 +121,9 @@ int main()
 							strat << "- ";
 					}
 
-					tempNum = pow(tempNum, line + 1);
+					exp++;
+					tempNum++;
+					tempNum = pow(tempNum, exp);
 					tempNum = tempNum % 24;
 				}
 			}
