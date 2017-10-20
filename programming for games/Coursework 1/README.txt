@@ -9,4 +9,5 @@ TO DO:
     1.1.5 [ ] IF LAST = Z GOTO... followed by IF LAST = Z GOTO... is silly, stop this from happening
   1.2 [x] Make it object oriented
   1.3 [ ] Add in ITERATIONS and MYSCORE variables - change when flags [8] and [9] trigger when you do this
+  1.4 [ ] When a variable has been printed, it should no longer be an option to print again (ie. the values of tempNum that chose it                 should be reassigned)
 2. [ ] Read in strategies - store words from file as a 2D matrix of strings?
