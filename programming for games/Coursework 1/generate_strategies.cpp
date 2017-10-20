@@ -117,7 +117,7 @@ void CreateStrategy::NewLine()
 int main()
 {
 	int strats = 0;			// number of startegies created
-	float length = 0.05;	// number that dictates length - not length in lines, probability of it being longer
+	float length = 1;	// number that dictates length - not length in lines, probability of it being longer
 	int line = 1;			// which line of the strategy are we on?
 	int seed = 0;
 
@@ -158,11 +158,11 @@ int main()
 			{
 				strat1.AddFeature("LASTOUTCOME");
 				strat1.AddFeature("=");
-				if (randNum <= 2)
+				if (randNum <= 26)
 					strat1.AddFeature("W");
-				else if (randNum <= 5)
+				else if (randNum <= 29)
 					strat1.AddFeature("X");
-				else if (randNum <= 8)
+				else if (randNum <= 32)
 					strat1.AddFeature("Y");
 				else
 					strat1.AddFeature("Z");
