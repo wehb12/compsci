@@ -18,6 +18,7 @@ public:
 	inline Strategy(const Strategy& cpy) : name("default") { strat = new vector<vector<string>>; }
 	~Strategy() { delete strat; }
 	friend ostream& operator<<(ostream& ostr, const Strategy& str);
+	inline string GetName() { return name; }
 protected:
 	string name;
 	vector<vector<string>>* strat;
@@ -27,8 +28,6 @@ ostream& operator<<(ostream& ostr, const Strategy& str)
 {
 	int i = 0;
 	int j = 0;
-
-	ofstream str.name;
 
 	for (auto it = str.strat->begin(); it != str.strat->end(); ++it)
 	{
@@ -209,5 +208,10 @@ int main()
 		}
 		++line;
 	}
+
+	ofstream file(strat1.GetName());
+
+	file << strat1;
+
     return 0;
 }
