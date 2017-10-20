@@ -8,4 +8,5 @@ TO DO:
     1.1.4 [ ] New way of generation seed.
     1.1.5 [ ] IF LAST = Z GOTO... followed by IF LAST = Z GOTO... is silly, stop this from happening
   1.2 [x] Make it object oriented
+  1.3 [ ] Add in ITERATIONS and MYSCORE variables
 2. [ ] Read in strategies - store words from file as a 2D matrix of strings?
