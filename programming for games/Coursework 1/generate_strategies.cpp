@@ -13,7 +13,7 @@ using namespace std;
 class Strategy
 {
 public:
-	inline Strategy(const string txt) : name(txt) { strat = new vector<vector<string>>; }
+	Strategy(const string txt);
 	inline Strategy() : name("default") { strat = new vector<vector<string>>;  }
 	inline Strategy(const Strategy& cpy) : name("default") { strat = new vector<vector<string>>; }
 	~Strategy() { delete strat; }
@@ -24,21 +24,21 @@ protected:
 	vector<vector<string>>* strat;
 };
 
+Strategy::Strategy(const string txt) : name(txt)
+{
+	strat = new vector<vector<string>>(1);
+}
+
 ostream& operator<<(ostream& ostr, const Strategy& str)
 {
-	int i = 0;
-	int j = 0;
-
 	for (auto it = str.strat->begin(); it != str.strat->end(); ++it)
 	{
-		for (auto it2 = str.strat->begin()->begin(); it2 != str.strat->end()->end(); it2++)
-		{
-			ostr << it[i][j] << ' ';
-			++j;
-		}
+		for (auto it2 = it->begin(); it2 != it->end(); it2++)
+			ostr << *it2 << ' ';
 		ostr << endl;
-		++i;
 	}
+
+	return ostr;
 }
 
 class CreateStrategy : public Strategy
@@ -55,8 +55,7 @@ public:
 
 void CreateStrategy::AddFeature(int num)
 {
-	string txt = "";
-	txt += num;
+	string txt = to_string(num);
 	strat->back().push_back(txt);
 }
 
@@ -76,7 +75,7 @@ int main()
 
 	++strats;
 
-	seed = 1000;//rand() % 500;
+	seed = 100;//rand() % 500;
 	if (seed == 0)
 		seed = 1;
 
@@ -106,6 +105,7 @@ int main()
 				strat1.AddFeature("SILENCE");
 			else
 				strat1.AddFeature("RANDOM");
+			strat1.NewLine();
 		}
 		else				// print out a statement
 		{
@@ -202,6 +202,7 @@ int main()
 					else
 						strat1.AddFeature("RANDOM");
 					++line;
+					strat1.NewLine();
 				}
 				--line;
 			}
