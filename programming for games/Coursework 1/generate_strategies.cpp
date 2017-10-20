@@ -6,8 +6,64 @@
 #include <fstream>
 #include <math.h>
 #include <string>
+#include <vector>
 
 using namespace std;
+
+class Strategy
+{
+public:
+	Strategy(const string txt);
+	inline Strategy() : name("default") { strat = new vector<vector<string>>;  }
+	inline Strategy(const Strategy& cpy) : name("default") { strat = new vector<vector<string>>; }
+	~Strategy() { delete strat; }
+	friend ostream& operator<<(ostream& ostr, const Strategy& str);
+	inline string GetName() { return name; }
+protected:
+	string name;
+	vector<vector<string>>* strat;
+};
+
+Strategy::Strategy(const string txt) : name(txt)
+{
+	strat = new vector<vector<string>>(1);
+}
+
+ostream& operator<<(ostream& ostr, const Strategy& str)
+{
+	for (auto it = str.strat->begin(); it != str.strat->end(); ++it)
+	{
+		for (auto it2 = it->begin(); it2 != it->end(); it2++)
+			ostr << *it2 << ' ';
+		ostr << endl;
+	}
+
+	return ostr;
+}
+
+class CreateStrategy : public Strategy
+{
+public:
+	inline CreateStrategy(const string txt) : Strategy(txt) { }
+	inline CreateStrategy() : Strategy() { }
+	inline CreateStrategy(const CreateStrategy& cpy) : Strategy(cpy) { }
+	~CreateStrategy() { }
+	inline void AddFeature(string txt) { strat->back().push_back(txt); }
+	void AddFeature(int num);
+	void NewLine();
+};
+
+void CreateStrategy::AddFeature(int num)
+{
+	string txt = to_string(num);
+	strat->back().push_back(txt);
+}
+
+void CreateStrategy::NewLine()
+{
+	vector<string> temp(0);
+	strat->push_back(temp);
+}
 
 int main()
 {
@@ -27,14 +83,11 @@ int main()
 	id += to_string(strats);
 	id += ".txt";
 
-	ofstream strat(id);
-
-	strat << "This strategy had a seed of " << seed << ", a length adjust variable of " << lengthAdjust
-		<< " and a user set length adjuster of " << length << endl << endl;
+	CreateStrategy strat1(id);
 
 	while (line < (((float)seed * length) / lengthAdjust))
 	{
-		strat << line << ' ';
+		strat1.AddFeature(line);
 
 		float exp = line;
 		float maxExp = log(2100000000) / log(seed);
@@ -47,26 +100,28 @@ int main()
 		if (randNum >= 36)	// print an exit condition
 		{
 			if (randNum <= 47)
-				strat << "BETRAY" << endl;
+				strat1.AddFeature("BETRAY");
 			else if (randNum <= 59)
-				strat << "SILENCE" << endl;
+				strat1.AddFeature("SILENCE");
 			else
-				strat << "RANDOM" << endl;
+				strat1.AddFeature("RANDOM");
+			strat1.NewLine();
 		}
 		else				// print out a statement
 		{
-			strat << "IF ";
+			strat1.AddFeature("IF");
 			if (randNum >= 24)
 			{
-				strat << "LASTOUTCOME = ";
+				strat1.AddFeature("LASTOUTCOME");
+				strat1.AddFeature("=");
 				if (randNum <= 2)
-					strat << "W ";
+					strat1.AddFeature("W");
 				else if (randNum <= 5)
-					strat << "X ";
+					strat1.AddFeature("X");
 				else if (randNum <= 8)
-					strat << "Y ";
+					strat1.AddFeature("Y");
 				else
-					strat << "Z ";
+					strat1.AddFeature("Z");
 			}
 			else
 			{
@@ -83,19 +138,18 @@ int main()
 					int temp = pow(tempNum, exp);
 					temp = temp % 200;
 
-					if (tempNum <= 11)
-						strat << temp << ' ';
+					if (tempNum <= 6)
+						strat1.AddFeature(temp);
 					else
 					{
-						strat << "ALLOUTCOMES_";
 						if (tempNum <= 14)
-							strat << "W ";
+							strat1.AddFeature("ALLOUTCOMES_W");
 						else if (tempNum <= 17)
-							strat << "X ";
+							strat1.AddFeature("ALLOUTCOMES_X");
 						else if (tempNum <= 20)
-							strat << "Y ";
+							strat1.AddFeature("ALLOUTCOMES_Y");
 						else
-							strat << "Z ";
+							strat1.AddFeature("ALLOUTCOMES_Z");
 					}
 
 					if (temp >= 80)
@@ -103,11 +157,11 @@ int main()
 						if (!secondHalf)
 						{
 							if (temp <= 119)
-								strat << "= ";
+								strat1.AddFeature("=");
 							else if (temp <= 159)
-								strat << "< ";
+								strat1.AddFeature("<");
 							else
-								strat << "> ";
+								strat1.AddFeature(">");
 							secondHalf = true;
 						}
 						else
@@ -116,19 +170,24 @@ int main()
 					else
 					{
 						if (temp <= 39)
-							strat << "+ ";
+							strat1.AddFeature("+");
 						else
-							strat << "- ";
+							strat1.AddFeature("-");
 					}
 
 					exp++;
 					tempNum++;
+					maxExp = log(2100000000) / log(tempNum);
+					while ((exp > maxExp) && tempNum)
+						exp -= maxExp;
 					tempNum = pow(tempNum, exp);
 					tempNum = tempNum % 24;
 				}
 			}
 
-			strat << "GOTO " << (line + 2) << endl;
+			strat1.AddFeature("GOTO");
+			strat1.AddFeature(line + 2);
+			strat1.NewLine();
 			if (line >= (((float)seed * length) / lengthAdjust) - 1)
 			{
 				for (int i = 0; i < 2; ++i)
@@ -137,17 +196,23 @@ int main()
 					randNum = randNum % 36;
 
 					if (randNum <= 11)
-						strat << "BETRAY" << endl;
+						strat1.AddFeature("BETRAY");
 					else if (randNum <= 23)
-						strat << "SILENCE" << endl;
+						strat1.AddFeature("SILENCE");
 					else
-						strat << "RANDOM" << endl;
+						strat1.AddFeature("RANDOM");
 					++line;
+					strat1.NewLine();
 				}
 				--line;
 			}
 		}
 		++line;
 	}
+
+	ofstream file(strat1.GetName());
+
+	file << strat1;
+
     return 0;
 }
