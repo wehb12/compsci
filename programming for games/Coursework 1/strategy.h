@@ -17,6 +17,7 @@ public:
 	inline Strategy() : name("default") { strat = new vector<vector<string> >(1);  }
 	inline Strategy(const Strategy& cpy) : name("default") { strat = new vector<vector<string> >(1); }
 	~Strategy() { delete strat; }
+
 	friend ostream& operator<<(ostream& ostr, const Strategy& str);
 	inline string GetName() { return name; }
 protected:
@@ -24,26 +25,30 @@ protected:
 	vector<vector<string> >* strat;
 };
 
-ostream& operator<<(ostream& ostr, const Strategy& str)
-{
-	for (auto it = str.strat->begin(); it != str.strat->end(); ++it)
-	{
-		for (auto it2 = it->begin(); it2 != it->end(); it2++)
-			ostr << *it2 << ' ';
-		ostr << endl;
-	}
-
-	return ostr;
-}
-
-class CreateStrategy : public Strategy
+class ReadStrategy : public Strategy
 {
 public:
-	inline CreateStrategy(const string txt) : Strategy(txt) { ClearChecksLine(); }
-	inline CreateStrategy() : Strategy() { ClearChecksLine(); }
-	inline CreateStrategy(const CreateStrategy& cpy) : Strategy(cpy) { ClearChecksLine();  }
-	~CreateStrategy() {  }
+	inline ReadStrategy(const string txt) : Strategy(txt) { OpenStrategy(); }
+	inline ReadStrategy() : Strategy() { OpenStrategy(); }
+	inline ReadStrategy(const ReadStrategy& cpy) : Strategy(cpy) { OpenStrategy(); }
+	~ReadStrategy() { }
+
 	inline void AddFeature(string txt) { strat->back().push_back(txt); }
+	virtual void NewLine();
+private:
+	void OpenStrategy();
+	void ReadFile(ifstream& file);
+	bool open;
+};
+
+class CreateStrategy : public ReadStrategy
+{
+public:
+	inline CreateStrategy(const string txt) : ReadStrategy(txt) { ClearChecksLine(); }
+	inline CreateStrategy() : ReadStrategy() { ClearChecksLine(); }
+	inline CreateStrategy(const CreateStrategy& cpy) : ReadStrategy(cpy) { ClearChecksLine();  }
+	~CreateStrategy() { }
+
 	void AddFeature(int num);
 	void NewLine();
 	void SetFlag(int flagNum);
@@ -60,6 +65,65 @@ protected:
 	void ClearChecksLine();
 	void ComputeSum();
 };
+
+ostream& operator<<(ostream& ostr, const Strategy& str)
+{
+	for (auto it = str.strat->begin(); it != str.strat->end(); ++it)
+	{
+		for (auto it2 = it->begin(); it2 != it->end(); it2++)
+			ostr << *it2 << ' ';
+		ostr << endl;
+	}
+
+	return ostr;
+}
+
+void ReadStrategy::NewLine()
+{
+	vector<string> temp(0);
+	strat->push_back(temp);
+}
+
+void ReadStrategy::OpenStrategy()
+{
+	ifstream file;
+
+	file.open(name);
+
+	if (!file.is_open())
+	{
+		cout << "Unable to open file " << name << endl;
+		return;
+	}
+
+	ReadFile(file);
+
+	file.close();
+}
+
+void ReadStrategy::ReadFile(ifstream& file)
+{
+	while (!file.eof())
+	{
+		string line = "";
+		string word = "";
+
+		getline(file, line);
+
+		for (int i = 0; i < line.size(); ++i)
+		{
+			if (line[i] == ' ')
+			{
+				AddFeature(word);
+				word = "";
+			}
+			else
+				word += line[i];
+		}
+		AddFeature(word);
+		NewLine();
+	}
+}
 
 void CreateStrategy::SetFlag(int flagNum)
 {
