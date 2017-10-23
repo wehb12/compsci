@@ -14,6 +14,8 @@ public:
 
 	int Run();
 	void RegisterOutcome(char outcome);
+	int GetMaxIterations() { return maxIterations; }
+	int GetScore() { return myScore; }
 private:
 	void Init(Strategy& str);
 	Strategy strat;
@@ -21,6 +23,7 @@ private:
 	int allOutcomes[4];
 	int iterations;
 	int myScore;
+	const int maxIterations = 200;
 
 	int Enumerate(string buff);
 	void AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf, int lhs[], int rhs[], int i);
@@ -41,6 +44,9 @@ void Prisoner::Init(Strategy& str)
 // returns 0 for BETRAY and 1 for SILENCE and -1 for ERROR
 int Prisoner::Run()
 {
+	if (iterations == maxIterations)
+		return -1;
+
 	unsigned int line = 0;
 	unsigned int word = 1;
 
@@ -79,7 +85,6 @@ int Prisoner::Run()
 	bool expectSymbol = false;
 	bool expectCompare = false;
 	bool expectOutcome = false;
-	bool jump = false;
 	// [0] - ALL_W, [1] - ALL_X, [2] - ALL_Y, [3] - ALL_Z,
 	// [4] - ITERATIONS, [5] - MYSCORE, [6] - INTEGER
 	int lhs[7] = { 0, 0, 0, 0, 0, 0, 0 };
@@ -87,7 +92,7 @@ int Prisoner::Run()
 	int compareOperator = 0; // 0 for =, 1 for >, 2 for <
 	char ifLast = '\0';
 	bool secondHalf = false;
-	bool minus;
+	bool minus = false;
 
 	while (1)
 	{
@@ -108,7 +113,7 @@ int Prisoner::Run()
 			expectVariable = true;
 			break;
 		case GOTO:
-			if (expectGoto)
+			if (expectGoto || (expectSymbol && secondHalf))
 				expectLineNo = true;
 			break;
 		case ALL_W:
@@ -234,6 +239,7 @@ int Prisoner::Run()
 			{
 				expectSymbol = false;
 				expectCompare = false;
+				expectVariable = true;
 				secondHalf = true;
 				compareOperator = 0;
 			}
@@ -243,6 +249,7 @@ int Prisoner::Run()
 			{
 				expectSymbol = false;
 				expectCompare = false;
+				expectVariable = true;
 				secondHalf = true;
 				compareOperator = 1;
 			}
@@ -252,6 +259,7 @@ int Prisoner::Run()
 			{
 				expectSymbol = false;
 				expectCompare = false;
+				expectVariable = true;
 				secondHalf = true;
 				compareOperator = 2;
 			}
@@ -319,10 +327,10 @@ int Prisoner::Enumerate(string buff)
 	if (buff.compare("GOTO") == 0) return 4;
 	if (buff.compare(0, 12, "ALLOUTCOMES_") == 0)
 	{
-		if (buff.compare(12, 1, "W")) return 5;
-		if (buff.compare(12, 1, "X")) return 6;
-		if (buff.compare(12, 1, "Y")) return 7;
-		if (buff.compare(12, 1, "Z")) return 8;
+		if (buff.compare(12, 1, "W") == 0) return 5;
+		if (buff.compare(12, 1, "X") == 0) return 6;
+		if (buff.compare(12, 1, "Y") == 0) return 7;
+		if (buff.compare(12, 1, "Z") == 0) return 8;
 	}
 	if (buff.compare("ITERATIONS") == 0) return 9;
 	if (buff.compare("MYSCORE") == 0) return 10;
@@ -331,7 +339,7 @@ int Prisoner::Enumerate(string buff)
 	if (buff.compare("X") == 0) return 13;
 	if (buff.compare("Y") == 0) return 14;
 	if (buff.compare("Z") == 0) return 15;
-	if ((buff.compare("9") <= 0) && (buff.compare("0") >= 0)) return 16;
+	if ((buff.compare(0, 1, "9") <= 0) && (buff.compare(0, 1, "0") >= 0)) return 16;
 	if (buff.compare("+") == 0) return 17;
 	if (buff.compare("-") == 0) return 18;
 	if (buff.compare("=") == 0) return 19;
@@ -364,4 +372,6 @@ void Prisoner::RegisterOutcome(char outcome)
 		myScore += 4;
 		break;
 	}
+	if (iterations == maxIterations)
+		cout << "This prisoner with strategy file " << strat.GetName() << " scored: " << myScore << endl;
 }
