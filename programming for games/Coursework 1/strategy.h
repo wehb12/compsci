@@ -2,6 +2,9 @@
 // ------------------------------------------------------- //
 // Contains class definitions for Strategy classes         //
 
+#pragma once
+
+#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <math.h>
@@ -13,13 +16,16 @@ using namespace std;
 class Strategy
 {
 public:
-	inline Strategy(const string txt) : name(txt) { strat = new vector<vector<string> >(1); };
-	inline Strategy() : name("default") { strat = new vector<vector<string> >(1);  }
-	inline Strategy(const Strategy& cpy) : name("default") { strat = new vector<vector<string> >(1); }
+	inline Strategy(const string txt) : name(txt), strat(new vector<vector<string> >(1)) { }
+	inline Strategy() : name("default"), strat(new vector<vector<string> >(1)) { }
+	inline Strategy(const Strategy& cpy) : name(cpy.name), strat(new vector<vector<string> >(1)) { }
 	~Strategy() { delete strat; }
 
 	friend ostream& operator<<(ostream& ostr, const Strategy& str);
+	Strategy& operator=(const Strategy& rhs);
 	inline string GetName() { return name; }
+	virtual void NewLine();
+	string GetInstr(unsigned int line, unsigned int word);
 protected:
 	string name;
 	vector<vector<string> >* strat;
@@ -28,17 +34,15 @@ protected:
 class ReadStrategy : public Strategy
 {
 public:
-	inline ReadStrategy(const string txt) : Strategy(txt) { OpenStrategy(); }
-	inline ReadStrategy() : Strategy() { OpenStrategy(); }
-	inline ReadStrategy(const ReadStrategy& cpy) : Strategy(cpy) { OpenStrategy(); }
+	inline ReadStrategy(const string txt) : Strategy(txt) { }
+	inline ReadStrategy() : Strategy() { }
+	inline ReadStrategy(const ReadStrategy& cpy) : Strategy(cpy) { }
 	~ReadStrategy() { }
 
+	bool OpenFile();
 	inline void AddFeature(string txt) { strat->back().push_back(txt); }
-	virtual void NewLine();
 private:
-	void OpenStrategy();
 	void ReadFile(ifstream& file);
-	bool open;
 };
 
 class CreateStrategy : public ReadStrategy
@@ -46,10 +50,11 @@ class CreateStrategy : public ReadStrategy
 public:
 	inline CreateStrategy(const string txt) : ReadStrategy(txt) { ClearChecksLine(); }
 	inline CreateStrategy() : ReadStrategy() { ClearChecksLine(); }
-	inline CreateStrategy(const CreateStrategy& cpy) : ReadStrategy(cpy) { ClearChecksLine();  }
+	inline CreateStrategy(const CreateStrategy& cpy) : ReadStrategy(cpy) { ClearChecksLine(); }
 	~CreateStrategy() { }
 
 	void AddFeature(int num);
+	using ReadStrategy::AddFeature;
 	void NewLine();
 	void SetFlag(int flagNum);
 	inline bool GetFlag(int flagNum) { return checks[flagNum]; }
@@ -78,13 +83,45 @@ ostream& operator<<(ostream& ostr, const Strategy& str)
 	return ostr;
 }
 
-void ReadStrategy::NewLine()
+Strategy& Strategy::operator=(const Strategy& rhs)
+{
+	if (this == &rhs)
+		return *this;
+
+	delete strat;
+	strat = new vector<vector<string> >;
+
+	for (auto it = rhs.strat->begin(); it != rhs.strat->end(); ++it)
+	{
+		NewLine();
+
+		for (auto it2 = it->begin(); it2 != it->end(); it2++)
+			strat->back().push_back(*it2);
+	}
+
+	name = rhs.name;
+}
+
+void Strategy::NewLine()
 {
 	vector<string> temp(0);
 	strat->push_back(temp);
 }
 
-void ReadStrategy::OpenStrategy()
+string Strategy::GetInstr(unsigned int line, unsigned int word)
+{
+	if (strat->size() > line)
+	{
+		if ((*strat)[line].size() > word )
+			return (*strat)[line][word];
+		else
+			return "EOL";
+	}
+	else
+		return "EOF";
+}
+
+bool ReadStrategy::OpenFile()
 {
 	ifstream file;
 
@@ -93,16 +130,19 @@ void ReadStrategy::OpenStrategy()
 	if (!file.is_open())
 	{
 		cout << "Unable to open file " << name << endl;
-		return;
+		return false;
 	}
 
 	ReadFile(file);
 
 	file.close();
+
+	return true;
 }
 
 void ReadStrategy::ReadFile(ifstream& file)
 {
+	bool space = false;		// set to true if a space was read last
 	while (!file.eof())
 	{
 		string line = "";
@@ -110,15 +150,22 @@ void ReadStrategy::ReadFile(ifstream& file)
 
 		getline(file, line);
 
-		for (int i = 0; i < line.size(); ++i)
+		for (unsigned int i = 0; i < line.size(); ++i)
 		{
 			if (line[i] == ' ')
 			{
-				AddFeature(word);
-				word = "";
+				if (!space)
+				{
+					AddFeature(word);
+					word = "";
+				}
+				space = true;
 			}
 			else
+			{
 				word += line[i];
+				space = false;
+			}
 		}
 		AddFeature(word);
 		NewLine();
