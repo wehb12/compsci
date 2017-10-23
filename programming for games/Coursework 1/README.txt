@@ -12,4 +12,5 @@ TO DO:
   1.3 [x] Add in ITERATIONS and MYSCORE variables - change when flags [8] and [9] trigger when you do this
   1.4 [ ] When a variable has been printed, it should no longer be an option to print again (ie. the values of tempNum that chose it should be reassigned)
 2. [x] Read in strategies - store words from file as a 2D matrix of strings?
-3. [ ] Use a BST to see which lines have been read to avoid an infinite loop.
+3. [ ] Use a BST to see which lines have been read to avoid an infinite loop
+4. [ ] Discard duplicate strategies, using overloading of == operator
