@@ -8,9 +8,11 @@ TO DO:
     1.1.4 [ ] New way of generating seed.
     1.1.5 [ ] IF LAST = Z GOTO... followed by IF LAST = Z GOTO... is silly, stop this from happening
   1.2 [x] Make it object oriented
-    1.2.1 [x] Remove the vector<vector<char>> part and just use a 1D array that stores current line's flags.
+    1.2.1 [x] Remove the vector<vector<char>> part and just use a 1D array that stores current line's flags
   1.3 [x] Add in ITERATIONS and MYSCORE variables - change when flags [8] and [9] trigger when you do this
   1.4 [ ] When a variable has been printed, it should no longer be an option to print again (ie. the values of tempNum that chose it should be reassigned)
 2. [x] Read in strategies - store words from file as a 2D matrix of strings?
 3. [ ] Use a BST to see which lines have been read to avoid an infinite loop
+  3.1 [ ] Combine points 3 & 4 - use a BST to find duplicate strategies faster - How are they ordered ?? Number of lines/ features ??
+  3.2 [ ] Template BST class to allow storage of comparables - line numbers and strategies
 4. [ ] Discard duplicate strategies, using overloading of == operator
