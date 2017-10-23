@@ -22,7 +22,7 @@ int main()
 {
 	const float length = 0.00001;	// number that dictates length - not length in lines, probability of it being longer
 
-	for (int strats = 1; strats <= 20; ++strats)
+	for (int strats = 1; strats <= 100; ++strats)
 	{
 		int line = 0;			// which line of the strategy are we on?
 		int seed = 0;
@@ -72,7 +72,7 @@ int main()
 					while (!exitFlag)
 					{
 						if (randNum <= 1)
-							symbol = Integer(strat1, randNum, exp);
+							symbol = Integer(strat1, seed, exp);
 						else
 							symbol = AllOutcomes(strat1, randNum);
 
