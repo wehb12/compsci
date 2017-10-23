@@ -25,6 +25,7 @@ private:
 	int Enumerate(string buff);
 	void AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf, int lhs[], int rhs[], int i);
 	char AssignOutcome(bool& expectOutcome, bool& expectGoto, const char last);
+	int Sum(int arr[]);
 };
 
 void Prisoner::Init(Strategy& str)
@@ -61,7 +62,7 @@ int Prisoner::Run()
 		X,
 		Y,
 		Z,
-		LINENO,
+		NUMBER,
 		PLUS,
 		SUBTRACT,
 		EQUALS,
@@ -79,8 +80,11 @@ int Prisoner::Run()
 	bool expectCompare = false;
 	bool expectOutcome = false;
 	bool jump = false;
-	int lhs[6] = { 0, 0, 0, 0, 0, 0 };
-	int rhs[6] = { 0, 0, 0, 0, 0, 0 };
+	// [0] - ALL_W, [1] - ALL_X, [2] - ALL_Y, [3] - ALL_Z,
+	// [4] - ITERATIONS, [5] - MYSCORE, [6] - INTEGER
+	int lhs[7] = { 0, 0, 0, 0, 0, 0, 0 };
+	int rhs[7] = { 0, 0, 0, 0, 0, 0, 0 };
+	int compareOperator = 0; // 0 for =, 1 for >, 2 for <
 	char ifLast = '\0';
 	bool secondHalf = false;
 	bool minus;
@@ -156,18 +160,123 @@ int Prisoner::Run()
 			if (expectOutcome && !expectCompare)
 				ifLast = AssignOutcome(expectOutcome, expectGoto, 'Z');
 			break;
-		case LINENO:
+		case NUMBER:
 			if (expectLineNo)
 			{
 				expectLineNo = false;
-
+				if (ifLast != '\0')
+				{
+					if (lastOutcome == ifLast)
+						line = stoi(buff) - 1;
+					else
+						++line;
+				}
+				else
+				{
+					switch (compareOperator)
+					{
+						case 0:
+							if (Sum(lhs) == Sum(rhs))
+								line = stoi(buff) - 1;
+							else
+								++line;
+							break;
+						case 1:
+							if (Sum(lhs) > Sum(rhs))
+								line = stoi(buff) - 1;
+							else
+								++line;
+							break;
+						case 2:
+							if (Sum(lhs) < Sum(rhs))
+								line = stoi(buff) - 1;
+							else
+								++line;
+							break;
+					}
+				}
+				word = 0;
 			}
+			else if (expectVariable)
+			{
+				expectVariable = false;
+				expectSymbol = true;
+
+				int sign = 1;
+				if (minus)
+				{
+					sign = -1;
+					minus = false;
+				}
+				if (secondHalf)
+					rhs[6] += sign * stoi(buff);
+				else
+					lhs[6] += sign * stoi(buff);
+			}
+			break;
+		case PLUS:
+			if (expectSymbol)
+			{
+				expectSymbol = false;
+				expectVariable = true;
+			}
+			break;
+		case SUBTRACT:
+			if (expectSymbol)
+			{
+				expectSymbol = false;
+				expectVariable = true;
+				minus = true;
+			}
+			break;
+		case EQUALS:
+			if (expectSymbol)
+			{
+				expectSymbol = false;
+				expectCompare = false;
+				secondHalf = true;
+				compareOperator = 0;
+			}
+			break;
+		case GREATER:
+			if (expectSymbol)
+			{
+				expectSymbol = false;
+				expectCompare = false;
+				secondHalf = true;
+				compareOperator = 1;
+			}
+			break;
+		case LESS:
+			if (expectSymbol)
+			{
+				expectSymbol = false;
+				expectCompare = false;
+				secondHalf = true;
+				compareOperator = 2;
+			}
+			break;
+		case EOL:
+			++line;
+			word = 0;
+			break;
+		case EOF:
+			return -1;
 			break;
 		case ERROR:
 			return -1;
 			break;
 		}
+		++word;
 	}
+}
+
+int Prisoner::Sum(int arr[])
+{
+	int sum = 0;
+	for (int i = 0; i < 7; ++i)
+		sum += arr[i];
+	return sum;
 }
 
 char Prisoner::AssignOutcome(bool& expectOutcome, bool& expectGoto, const char last)
@@ -179,6 +288,14 @@ char Prisoner::AssignOutcome(bool& expectOutcome, bool& expectGoto, const char l
 
 void Prisoner::AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf, int lhs[], int rhs[], int i)
 {
+	int sum = 0;
+	if (i < 4)
+		sum = allOutcomes[i];
+	else if (i == 4)
+		sum = iterations;
+	else if (i == 5)
+		sum = myScore;
+
 	sym = true;
 	var = false;
 	int sign = 1;
@@ -188,9 +305,9 @@ void Prisoner::AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf
 		minus = false;
 	}
 	if (secondHalf)
-		rhs[i] = sign * allOutcomes[2];
+		rhs[i] += sign * sum;
 	else
-		lhs[i] = sign * allOutcomes[2];
+		lhs[i] += sign * sum;
 }
 
 int Prisoner::Enumerate(string buff)
@@ -200,7 +317,7 @@ int Prisoner::Enumerate(string buff)
 	if (buff.compare("RANDOM") == 0) return 2;
 	if (buff.compare("IF") == 0) return 3;
 	if (buff.compare("GOTO") == 0) return 4;
-	if (buff.compare(0, 12, "ALLOUTCOMES_"))
+	if (buff.compare(0, 12, "ALLOUTCOMES_") == 0)
 	{
 		if (buff.compare(12, 1, "W")) return 5;
 		if (buff.compare(12, 1, "X")) return 6;
@@ -210,19 +327,19 @@ int Prisoner::Enumerate(string buff)
 	if (buff.compare("ITERATIONS") == 0) return 9;
 	if (buff.compare("MYSCORE") == 0) return 10;
 	if (buff.compare("LASTOUTCOME") == 0) return 11;
-	if (buff.compare("W")) return 12;
-	if (buff.compare("X")) return 13;
-	if (buff.compare("Y")) return 14;
-	if (buff.compare("Z")) return 15;
-	if ((buff.compare("9") <= 0) || (buff.compare("0") >= 0)) return 17;
-	if (buff.compare("+") == 0) return 18;
-	if (buff.compare("-") == 0) return 19;
-	if (buff.compare("=") == 0) return 20;
-	if (buff.compare(">") == 0) return 21;
-	if (buff.compare("<") == 0) return 22;
-	if (buff.compare("EOL") == 0) return 23;
-	if (buff.compare("EOF") == 0) return 24;
-	return 25;
+	if (buff.compare("W") == 0) return 12;
+	if (buff.compare("X") == 0) return 13;
+	if (buff.compare("Y") == 0) return 14;
+	if (buff.compare("Z") == 0) return 15;
+	if ((buff.compare("9") <= 0) && (buff.compare("0") >= 0)) return 16;
+	if (buff.compare("+") == 0) return 17;
+	if (buff.compare("-") == 0) return 18;
+	if (buff.compare("=") == 0) return 19;
+	if (buff.compare(">") == 0) return 20;
+	if (buff.compare("<") == 0) return 21;
+	if (buff.compare("EOL") == 0) return 22;
+	if (buff.compare("EOF") == 0) return 23;
+	return 24;
 }
 
 void Prisoner::RegisterOutcome(char outcome)
