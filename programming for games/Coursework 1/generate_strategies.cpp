@@ -1,6 +1,7 @@
 // generate_strategies.cpp : Defines the entry point for the console application.
 //
 
+#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <math.h>
@@ -32,7 +33,7 @@ int main()
 		if (seed == 0)
 			seed = 1;
 
-		string id = "Desktop/Uni/Masters/Programming_for_Games/Coursework_1/strat";
+		string id = "strat";
 		id += to_string(strats);
 		id += ".txt";
 
@@ -53,7 +54,7 @@ int main()
 
 				if (exitLast || !goTo)
 					break;
-				
+
 				exitLast = true;
 			}
 			else				// print out a statement
@@ -122,7 +123,7 @@ int main()
 		strat1.PrintStrategy();
 	}
 
-    return 0;
+	return 0;
 }
 
 bool Symbol(CreateStrategy& strat, int num, float exp)
@@ -160,54 +161,54 @@ bool AllOutcomes(CreateStrategy& strat, int num)
 	num = num % 6;
 	switch (num)
 	{
-		case 0:
-			if (!strat.GetFlag(0))
-			{
-				strat.AddFeature("ALLOUTCOMES_W");
-				strat.SetFlag(0);
-				return true;
-			}
-			break;
-		case 1:
-			if (!strat.GetFlag(1))
-			{
-				strat.AddFeature("ALLOUTCOMES_X");
-				strat.SetFlag(1);
-				return true;
-			}
-			break;
-		case 2:
-			if (!strat.GetFlag(2))
-			{
-				strat.AddFeature("ALLOUTCOMES_Y");
-				strat.SetFlag(2);
-				return true;
-			}
-			break;
-		case 3:
-			if (!strat.GetFlag(3))
-			{
-				strat.AddFeature("ALLOUTCOMES_Z");
-				strat.SetFlag(3);
-				return true;
-			}
-			break;
-		case 4:
-			if (!strat.GetFlag(5))
-			{
-				strat.AddFeature("ITERATIONS");
-				strat.SetFlag(5);
-				return true;
-			}
-			break;
-		case 5:
-			if (!strat.GetFlag(6))
-			{
-				strat.AddFeature("MYSCORE");
-				strat.SetFlag(6);
-				return true;
-			}
-			break;
+	case 0:
+		if (!strat.GetFlag(0))
+		{
+			strat.AddFeature("ALLOUTCOMES_W");
+			strat.SetFlag(0);
+			return true;
+		}
+		break;
+	case 1:
+		if (!strat.GetFlag(1))
+		{
+			strat.AddFeature("ALLOUTCOMES_X");
+			strat.SetFlag(1);
+			return true;
+		}
+		break;
+	case 2:
+		if (!strat.GetFlag(2))
+		{
+			strat.AddFeature("ALLOUTCOMES_Y");
+			strat.SetFlag(2);
+			return true;
+		}
+		break;
+	case 3:
+		if (!strat.GetFlag(3))
+		{
+			strat.AddFeature("ALLOUTCOMES_Z");
+			strat.SetFlag(3);
+			return true;
+		}
+		break;
+	case 4:
+		if (!strat.GetFlag(5))
+		{
+			strat.AddFeature("ITERATIONS");
+			strat.SetFlag(5);
+			return true;
+		}
+		break;
+	case 5:
+		if (!strat.GetFlag(6))
+		{
+			strat.AddFeature("MYSCORE");
+			strat.SetFlag(6);
+			return true;
+		}
+		break;
 	}
 	return false;
 }
@@ -232,15 +233,15 @@ void ExitCondition(CreateStrategy& strat, int num)
 
 	switch (num)
 	{
-		case 0:
-			strat.AddFeature("BETRAY");
-			break;
-		case 1:
-			strat.AddFeature("SILENCE");
-			break;
-		case 2:
-			strat.AddFeature("RANDOM");
-			break;
+	case 0:
+		strat.AddFeature("BETRAY");
+		break;
+	case 1:
+		strat.AddFeature("SILENCE");
+		break;
+	case 2:
+		strat.AddFeature("RANDOM");
+		break;
 	}
 	strat.NewLine();
 }
@@ -252,18 +253,18 @@ void LastOutcome(CreateStrategy& strat, int num)
 	strat.AddFeature("=");
 	switch (num)
 	{
-		case 0:
-			strat.AddFeature("W");
-			break;
-		case 1:
-			strat.AddFeature("X");
-			break;
-		case 2:
-			strat.AddFeature("Y");
-			break;
-		case 3:
-			strat.AddFeature("Z");
-			break;
+	case 0:
+		strat.AddFeature("W");
+		break;
+	case 1:
+		strat.AddFeature("X");
+		break;
+	case 2:
+		strat.AddFeature("Y");
+		break;
+	case 3:
+		strat.AddFeature("Z");
+		break;
 	}
 }
 
