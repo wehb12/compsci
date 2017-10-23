@@ -9,32 +9,121 @@
 using namespace std;
 
 void Game(Prisoner&, Prisoner&);
+int Min(int[]);
 
 int main()
 {
-	string id1 = "strat";
-	id1 += to_string(1);
-	id1 += ".txt";
-
-	string id2 = "strat";
-	id2 += to_string(2);
-	id2 += ".txt";
-
-	ReadStrategy strat1(id1);
-	if (strat1.OpenFile())
+	int winners[10] = { 0 };
+	for (int t = 0; t < 10; ++t)
 	{
-		Prisoner A(strat1);
-		ReadStrategy strat2(id2);
-		if (strat2.OpenFile())
-		{
-			Prisoner B(strat2);
+		int start = 1 + 10 * t;
 
-			for (int i = 0; i < 5; ++i)
-				Game(A, B);
+		cout << "Tournament" << endl << "-----------------------" << endl << endl;
+
+		int scores[10] = { 0 };
+
+		for (int i = start; i <= start + 9; ++i)
+		{
+			for (int j = i; j <= start + 9; ++j)
+			{
+				string id1 = "strat";
+				id1 += to_string(i);
+				id1 += ".txt";
+
+				string id2 = "strat";
+				id2 += to_string(j);
+				id2 += ".txt";
+
+				ReadStrategy strat1(id1);
+				if (strat1.OpenFile())
+				{
+					Prisoner A(strat1);
+					ReadStrategy strat2(id2);
+					if (strat2.OpenFile())
+					{
+						Prisoner B(strat2);
+
+						cout << "Match between " << id1 << " and " << id2 << endl << "-----------------------" << endl;
+
+						for (int k = 0; k < A.GetMaxIterations(); ++k)
+							Game(A, B);
+
+						scores[i - start] += A.GetScore();
+						scores[j - start] += B.GetScore();
+
+						cout << "-----------------------" << endl;
+					}
+				}
+			}
+		}
+
+		cout << "The results are:" << endl;
+		for (int i = 0; i < 10; ++i)
+			cout << i + start << ": " << scores[i] << endl;
+
+		int winner = Min(scores);
+		cout << endl << "The victor was Strategy " << winner + start << " with a score of " << scores[winner] << endl;
+		winners[t] = winner + start;
+	}
+
+	cout << "Finalist Tournament" << endl << "-----------------------" << endl << endl;
+
+	int scores[10] = { 0 };
+
+	for (int i = 1; i <= 10; ++i)
+	{
+		for (int j = i; j <= 10; ++j)
+		{
+			string id1 = "strat";
+			id1 += to_string(winners[i-1]);
+			id1 += ".txt";
+
+			string id2 = "strat";
+			id2 += to_string(winners[j-1]);
+			id2 += ".txt";
+
+			ReadStrategy strat1(id1);
+			if (strat1.OpenFile())
+			{
+				Prisoner A(strat1);
+				ReadStrategy strat2(id2);
+				if (strat2.OpenFile())
+				{
+					Prisoner B(strat2);
+
+					cout << "Match between " << id1 << " and " << id2 << endl << "-----------------------" << endl;
+
+					for (int k = 0; k < A.GetMaxIterations(); ++k)
+						Game(A, B);
+
+					scores[i - 1] += A.GetScore();
+					scores[j - 1] += B.GetScore();
+
+					cout << "-----------------------" << endl;
+				}
+			}
 		}
 	}
 
+	cout << "The results are:" << endl;
+	for (int i = 0; i < 10; ++i)
+		cout << winners[i] << ": " << scores[i] << endl;
+
+	int winner = Min(scores);
+	cout << endl << "The overall victor was Strategy " << winners[winner] << " with a score of " << scores[winner] << endl;
+
 	return 0;
+}
+
+int Min(int scores[])
+{
+	int min = 0;
+	for (int i = 0; i < 10; ++i)
+	{
+		if (scores[i] < scores[min])
+			min = i;
+	}
+	return min;
 }
 
 void Game(Prisoner& A, Prisoner& B)
