@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "strategy.h"
 #include "prisoner.h"
+#include "BST.h"
 
 using namespace std;
 
@@ -18,6 +19,7 @@ int main()
 	{
 		int start = 1 + 10 * t;
 
+		cout << endl << "-----------------------" << endl;
 		cout << "Tournament" << endl << "-----------------------" << endl << endl;
 
 		int scores[10] = { 0 };
@@ -43,15 +45,11 @@ int main()
 					{
 						Prisoner B(strat2);
 
-						cout << "Match between " << id1 << " and " << id2 << endl << "-----------------------" << endl;
-
 						for (int k = 0; k < A.GetMaxIterations(); ++k)
 							Game(A, B);
 
 						scores[i - start] += A.GetScore();
 						scores[j - start] += B.GetScore();
-
-						cout << "-----------------------" << endl;
 					}
 				}
 			}
@@ -66,6 +64,7 @@ int main()
 		winners[t] = winner + start;
 	}
 
+	cout << endl << "-----------------------" << endl;
 	cout << "Finalist Tournament" << endl << "-----------------------" << endl << endl;
 
 	int scores[10] = { 0 };
@@ -91,15 +90,11 @@ int main()
 				{
 					Prisoner B(strat2);
 
-					cout << "Match between " << id1 << " and " << id2 << endl << "-----------------------" << endl;
-
 					for (int k = 0; k < A.GetMaxIterations(); ++k)
 						Game(A, B);
 
 					scores[i - 1] += A.GetScore();
 					scores[j - 1] += B.GetScore();
-
-					cout << "-----------------------" << endl;
 				}
 			}
 		}
@@ -131,9 +126,9 @@ void Game(Prisoner& A, Prisoner& B)
 	int AOutcome = A.Run();
 	int BOutcome = B.Run();
 
-	if (AOutcome != -1)
+	if (AOutcome >= 0)
 	{
-		if (BOutcome != -1)
+		if (BOutcome >= 0)
 		{
 			if (AOutcome == 0)
 			{
@@ -163,8 +158,24 @@ void Game(Prisoner& A, Prisoner& B)
 			}
 		}
 		else
-			cout << "Error in prisoner B strategy" << endl;
+		{
+			cout << "Error in prisoner B strategy: ";
+			if (BOutcome == -1)
+				cout << "end of file reached with no exit condition." << endl;
+			else if (BOutcome == -2)
+				cout << "unknown keyword." << endl;
+			else
+				cout << "unknown error." << endl;
+		}
 	}
 	else
-		cout << "Error in prisoner A strategy" << endl;
+	{
+		cout << "Error in prisoner A strategy: ";
+		if (AOutcome == -1)
+			cout << "end of file reached with no exit condition." << endl;
+		else if (AOutcome == -2)
+			cout << "unknown keyword." << endl;
+		else
+			cout << "unknown error." << endl;
+	};
 }
