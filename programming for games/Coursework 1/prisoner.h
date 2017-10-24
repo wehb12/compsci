@@ -272,7 +272,7 @@ int Prisoner::Run()
 			return -1;
 			break;
 		case ERROR:
-			return -1;
+			return -2;
 			break;
 		}
 		++word;
@@ -372,6 +372,4 @@ void Prisoner::RegisterOutcome(char outcome)
 		myScore += 4;
 		break;
 	}
-	if (iterations == maxIterations)
-		cout << "This prisoner with strategy file " << strat.GetName() << " scored: " << myScore << endl;
 }
