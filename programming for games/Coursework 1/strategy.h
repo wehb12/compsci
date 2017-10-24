@@ -42,7 +42,7 @@ public:
 	~ReadStrategy() { }
 
 	bool OpenFile();
-	inline void AddFeature(string txt) { strat->back().push_back(txt); }
+	inline virtual void AddFeature(string txt) { strat->back().push_back(txt); }
 private:
 	void ReadFile(ifstream& file);
 };
@@ -55,8 +55,8 @@ public:
 	inline CreateStrategy(const CreateStrategy& cpy) : ReadStrategy(cpy) { ClearChecksLine(); }
 	~CreateStrategy() { }
 
+	void AddFeature(string txt) override;
 	void AddFeature(int num);
-	using ReadStrategy::AddFeature;
 	void NewLine();
 	void SetFlag(int flagNum);
 	inline bool GetFlag(int flagNum) { return checks[flagNum]; }
@@ -223,7 +223,7 @@ void CreateStrategy::SetFlag(int flagNum)
 void CreateStrategy::ComputeSum()
 {
 	int sum = 0;
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 7; ++i)
 		if (checks[i])
 			++sum;
 	if (sum == 6)
@@ -236,6 +236,12 @@ void CreateStrategy::ClearChecksLine()
 {
 	for (int i = 0; i < 10; ++i)
 		checks[i] = false;
+}
+
+void CreateStrategy::AddFeature(string txt)
+{
+	strat->back().push_back(txt);
+	ComputeSum();
 }
 
 void CreateStrategy::AddFeature(int num)
