@@ -21,13 +21,15 @@ int PsuedoRand(int, float&);
 
 int main()
 {
-	const float length = 0.00001;	// number that dictates length - not length in lines, probability of it being longer
+	const float length = 0.05;	// number that dictates length - not length in lines, probability of it being longer
 
 	BST<Strategy> stratTree;
 
 	int attempts = 0;
+	int maxAttempts = 10000;
+	int stratsTotal = 100;
 
-	for (int strats = 1; strats <= 10; ++strats)
+	for (int strats = 1; strats <= stratsTotal; ++strats)
 	{
 		int line = 0;			// which line of the strategy are we on?
 		int seed = 0;
@@ -35,7 +37,7 @@ int main()
 		bool goTo = false;
 
 		seed = rand() % 1000;
-		if (seed == 0)
+ 		if (seed == 0)
 			seed = 1;
 
 		string id = "strat";
@@ -99,18 +101,19 @@ int main()
 				strat.AddFeature("GOTO");
 				strat.AddFeature(line + 2);
 				strat.NewLine();
-				if (line >= ((float)seed * length) - 1)
+				if (line >= (((float)seed * length) - 1))
 				{
+					int tempNum = seed;
 					int lastNum = -1;
 					for (int i = 0; i < 2; ++i)
 					{
-						randNum = pow(seed, line);
+						randNum = PsuedoRand(seed, exp);
 						randNum = randNum % 3;
 
 						while (randNum == lastNum)
 						{
-							++seed;
-							randNum = pow(seed, line);
+							++tempNum;
+							randNum = PsuedoRand(tempNum, exp);
 							randNum = randNum % 3;
 						}
 
@@ -121,6 +124,7 @@ int main()
 						ExitCondition(strat, randNum);
 					}
 					--line;
+					break;
 				}
 			}
 		}
@@ -142,9 +146,9 @@ int main()
 		}
 
 		++attempts;
-		if (attempts > 99)
+		if (attempts > maxAttempts)
 		{
-			cout << "Reached limit of attempts to create " << 10 << " unique strategies" << endl;
+			cout << "Reached limit of attempts to create " << stratsTotal << " unique strategies" << endl;
 			return 1;
 		}
 	}
@@ -174,7 +178,7 @@ bool Symbol(CreateStrategy& strat, int num, float exp)
 	}
 	else
 	{
-		if (temp <= 19)
+		if (temp <= 24)
 			strat.AddFeature("+");
 		else
 			strat.AddFeature("-");
@@ -301,6 +305,11 @@ int PsuedoRand(int base, float& exp)
 	float maxExp = log(2100000000) / log(base);
 	while (exp > abs(maxExp))
 		exp -= maxExp;
+
+	if ((exp < 0.2) && (maxExp >= 0.2))
+		exp = 0.2;
+	else if(exp < 0.2)
+		return base;
 
 	return (int)pow(base, exp);
 }
