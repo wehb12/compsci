@@ -13,9 +13,9 @@ TO DO:
   1.4 [ ] When a variable has been printed, it should no longer be an option to print again (ie. the values of tempNum that chose it should be reassigned)
 2. [x] Read in strategies - store words from file as a 2D matrix of strings?
 3. [ ] Use a BST to see which lines have been read to avoid an infinite loop
-  3.1 [ ] Combine points 3 & 4 - use a BST to find duplicate strategies faster - How are they ordered ?? Number of lines/ features ??
-  3.2 [ ] Template BST class to allow storage of comparables - line numbers and strategies
-4. [ ] Discard duplicate strategies, using overloading of == operator
+  3.1 [x] Combine points 3 & 4 - use a BST to find duplicate strategies faster - How are they ordered ?? Number of lines/ features ??
+  3.2 [x] Template BST class to allow storage of comparables - line numbers and strategies
+4. [x] Discard duplicate strategies, using overloading of == operator
   4.1 [ ] To make strategy generation faster, as few strategies as possible should be discarded. Make them more likely to be unique
     4.1.1 [ ] Make them longer
     4.1.2 [ ] Make seed % by a larger number
