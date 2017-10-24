@@ -114,15 +114,17 @@ void Strategy::NewLine()
 
 string Strategy::GetInstr(unsigned int line, unsigned int word)
 {
-	if (strat->size() > line)
+	for (auto it = strat->begin(); it != strat->end(); ++it)
 	{
-		if ((*strat)[line].size() > word)
-			return (*strat)[line][word];
-		else
-			return "EOL";
+		if ((*it)[0].compare(to_string(line)) == 0)
+		{
+			if ((*it).size() > word)
+				return (*it)[word];
+			else
+				return "EOL";
+		}
 	}
-	else
-		return "EOF";
+	return "EOF";
 }
 
 int Strategy::CompareTo(const Comparable& rhs)
