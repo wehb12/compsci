@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "strategy.h"
+#include "BST.h"
 
 using namespace std;
 
@@ -24,6 +25,8 @@ private:
 	int iterations;
 	int myScore;
 	const int maxIterations = 200;
+	bool CheckForInfLoops(BST<Integer>& tree, int leaf);
+
 
 	int Enumerate(string buff);
 	void AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf, int lhs[], int rhs[], int i);
@@ -47,7 +50,7 @@ int Prisoner::Run()
 	if (iterations == maxIterations)
 		return -1;
 
-	unsigned int line = 0;
+	unsigned int line = 1;
 	unsigned int word = 1;
 
 	enum keywords
@@ -93,6 +96,8 @@ int Prisoner::Run()
 	char ifLast = '\0';
 	bool secondHalf = false;
 	bool minus = false;
+
+	BST<Integer> lineTree(line);
 
 	while (1)
 	{
@@ -172,7 +177,7 @@ int Prisoner::Run()
 				if (ifLast != '\0')
 				{
 					if (lastOutcome == ifLast)
-						line = stoi(buff) - 1;
+						line = stoi(buff);
 					else
 						++line;
 				}
@@ -182,25 +187,28 @@ int Prisoner::Run()
 					{
 						case 0:
 							if (Sum(lhs) == Sum(rhs))
-								line = stoi(buff) - 1;
+								line = stoi(buff);
 							else
 								++line;
 							break;
 						case 1:
 							if (Sum(lhs) > Sum(rhs))
-								line = stoi(buff) - 1;
+								line = stoi(buff);
 							else
 								++line;
 							break;
 						case 2:
 							if (Sum(lhs) < Sum(rhs))
-								line = stoi(buff) - 1;
+								line = stoi(buff);
 							else
 								++line;
 							break;
 					}
 				}
 				word = 0;
+				line = stoi(strat.GetInstr(line, word));
+				if (CheckForInfLoops(lineTree, line))
+					return -3;
 			}
 			else if (expectVariable)
 			{
@@ -266,6 +274,8 @@ int Prisoner::Run()
 			break;
 		case EOL:
 			++line;
+			if (CheckForInfLoops(lineTree, line))
+				return -3;
 			word = 0;
 			break;
 		case EOF:
@@ -277,6 +287,15 @@ int Prisoner::Run()
 		}
 		++word;
 	}
+}
+
+bool Prisoner::CheckForInfLoops(BST<Integer>& tree, int leaf)
+{
+	if (tree.Find(tree.GetRoot(), leaf))
+		return true;
+	else
+		tree.Insert(tree.GetRoot(), leaf);
+	return false;
 }
 
 int Prisoner::Sum(int arr[])
