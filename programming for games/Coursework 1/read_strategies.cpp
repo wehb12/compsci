@@ -20,7 +20,7 @@ int main()
 		int start = 1 + 10 * t;
 
 		cout << endl << "-----------------------" << endl;
-		cout << "Tournament" << endl << "-----------------------" << endl << endl;
+		cout << "Tournament" << endl << "-----------------------" << endl;
 
 		int scores[10] = { 0 };
 
@@ -65,7 +65,7 @@ int main()
 	}
 
 	cout << endl << "-----------------------" << endl;
-	cout << "Finalist Tournament" << endl << "-----------------------" << endl << endl;
+	cout << "Finalist Tournament" << endl << "-----------------------" << endl;
 
 	int scores[10] = { 0 };
 
@@ -164,6 +164,8 @@ void Game(Prisoner& A, Prisoner& B)
 				cout << "end of file reached with no exit condition." << endl;
 			else if (BOutcome == -2)
 				cout << "unknown keyword." << endl;
+			else if (BOutcome == -3)
+				cout << "infinite loop detected." << endl;
 			else
 				cout << "unknown error." << endl;
 		}
@@ -175,6 +177,8 @@ void Game(Prisoner& A, Prisoner& B)
 			cout << "end of file reached with no exit condition." << endl;
 		else if (AOutcome == -2)
 			cout << "unknown keyword." << endl;
+		else if (AOutcome == -3)
+			cout << "infinite loop detected." << endl;
 		else
 			cout << "unknown error." << endl;
 	};
