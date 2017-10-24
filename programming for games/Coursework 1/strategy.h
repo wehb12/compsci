@@ -10,10 +10,11 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#include "comparable.h"
 
 using namespace std;
 
-class Strategy
+class Strategy : public Comparable
 {
 public:
 	inline Strategy(const string txt) : name(txt), strat(new vector<vector<string> >(1)) { }
@@ -26,6 +27,7 @@ public:
 	inline string GetName() { return name; }
 	virtual void NewLine();
 	string GetInstr(unsigned int line, unsigned int word);
+	virtual int CompareTo(const Comparable& rhs) override;
 protected:
 	string name;
 	vector<vector<string> >* strat;
@@ -100,6 +102,8 @@ Strategy& Strategy::operator=(const Strategy& rhs)
 	}
 
 	name = rhs.name;
+
+	return *this;
 }
 
 void Strategy::NewLine()
@@ -112,13 +116,51 @@ string Strategy::GetInstr(unsigned int line, unsigned int word)
 {
 	if (strat->size() > line)
 	{
-		if ((*strat)[line].size() > word )
+		if ((*strat)[line].size() > word)
 			return (*strat)[line][word];
 		else
 			return "EOL";
 	}
 	else
 		return "EOF";
+}
+
+int Strategy::CompareTo(const Comparable& rhs)
+{
+	const Strategy *s = dynamic_cast<const Strategy*>(&rhs);
+
+	int thisLines = strat->size();
+	int sLines = s->strat->size();
+
+	if (thisLines < sLines)
+		return -1;
+	else if (thisLines > sLines)
+		return 1;
+	else	// same number of lines in each strategy
+	{
+		auto sIt = s->strat->begin();
+		for (auto it = strat->begin(); it != strat->end(); ++it)
+		{
+			if (it->size() < sIt->size())
+				return -1;
+			else if (it->size() > sIt->size())
+				return 1;
+			else
+			{
+				auto sIt2 = sIt->begin();
+				for (auto it2 = it->begin(); it2 != it->end(); ++it2)
+				{
+					if ((*it2).compare(*sIt2) < 0)
+						return -1;
+					else if ((*it2).compare(*sIt2) > 0)
+						return 1;
+					++sIt2;
+				}
+			}
+			++sIt;
+		}
+	}
+	return 0;
 }
 
 bool ReadStrategy::OpenFile()
