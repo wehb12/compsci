@@ -20,3 +20,5 @@ TO DO:
     4.1.1 [ ] Make them longer
     4.1.2 [ ] Make seed % by a larger number
 5. [ ] Add error checking to interpreter - mustn't interpret a file with incorrect syntax etc.
+6. [ ] Use threads to check for user input (exit) while tournament running
+  6.1 [ ] Display est. run time?
