@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "strategy.h"
+#include "BST.h"
 
 using namespace std;
 
@@ -22,14 +23,18 @@ int main()
 {
 	const float length = 0.00001;	// number that dictates length - not length in lines, probability of it being longer
 
-	for (int strats = 1; strats <= 100; ++strats)
+	BST<Strategy> stratTree;
+
+	int attempts = 0;
+
+	for (int strats = 1; strats <= 10; ++strats)
 	{
 		int line = 0;			// which line of the strategy are we on?
 		int seed = 0;
 		bool exitLast = false;	// variable that stops generation if two exit keywords printed in a row
 		bool goTo = false;
 
-		seed = rand() % 500;
+		seed = rand() % 1000;
 		if (seed == 0)
 			seed = 1;
 
@@ -37,12 +42,12 @@ int main()
 		id += to_string(strats);
 		id += ".txt";
 
-		CreateStrategy strat1(id);
+		CreateStrategy strat(id);
 
 		while (line < ((float)seed * length))
 		{
 			++line;
-			strat1.AddFeature(line);
+			strat.AddFeature(line);
 
 			float exp = line;
 			int randNum = PsuedoRand(seed, exp);
@@ -50,7 +55,7 @@ int main()
 
 			if (randNum >= 36)	// print an exit condition
 			{
-				ExitCondition(strat1, randNum);
+				ExitCondition(strat, randNum);
 
 				if (exitLast || !goTo)
 					break;
@@ -61,9 +66,9 @@ int main()
 			{
 				exitLast = false;
 
-				strat1.AddFeature("IF");
+				strat.AddFeature("IF");
 				if (randNum >= 24)
-					LastOutcome(strat1, randNum);
+					LastOutcome(strat, randNum);
 				else
 				{
 					bool exitFlag = false;
@@ -72,13 +77,13 @@ int main()
 					while (!exitFlag)
 					{
 						if (randNum <= 1)
-							symbol = Integer(strat1, seed, exp);
+							symbol = Integer(strat, seed, exp);
 						else
-							symbol = AllOutcomes(strat1, randNum);
+							symbol = AllOutcomes(strat, randNum);
 
-						if (symbol || (!strat1.GetFlag(7) && strat1.GetFlag(8)) || strat1.GetFlag(9))
+						if (symbol || (!strat.GetFlag(7) && strat.GetFlag(8)) || strat.GetFlag(9))
 						{
-							exitFlag = Symbol(strat1, randNum, exp);
+							exitFlag = Symbol(strat, randNum, exp);
 							symbol = false;
 						}
 
@@ -91,9 +96,9 @@ int main()
 				}
 
 				goTo = true;
-				strat1.AddFeature("GOTO");
-				strat1.AddFeature(line + 2);
-				strat1.NewLine();
+				strat.AddFeature("GOTO");
+				strat.AddFeature(line + 2);
+				strat.NewLine();
 				if (line >= ((float)seed * length) - 1)
 				{
 					int lastNum = -1;
@@ -112,15 +117,36 @@ int main()
 						lastNum = randNum;
 						++line;
 
-						strat1.AddFeature(line);
-						ExitCondition(strat1, randNum);
+						strat.AddFeature(line);
+						ExitCondition(strat, randNum);
 					}
 					--line;
 				}
 			}
 		}
 
-		strat1.PrintStrategy();
+		if (strats == 1)
+		{
+			stratTree.SetRoot(strat);
+			strat.PrintStrategy();
+		}
+		else
+		{
+			if (!stratTree.Find(stratTree.GetRoot(), strat))
+			{
+				stratTree.Insert(stratTree.GetRoot(), strat);
+				strat.PrintStrategy();
+			}
+			else
+				--strats;
+		}
+
+		++attempts;
+		if (attempts > 99)
+		{
+			cout << "Reached limit of attempts to create " << 10 << " unique strategies" << endl;
+			return 1;
+		}
 	}
 
 	return 0;
