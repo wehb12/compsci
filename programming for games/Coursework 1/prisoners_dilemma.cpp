@@ -4,8 +4,8 @@
 #include <iostream>
 #include "stdafx.h"
 #include "generate.h"
-#include "prisoner.h"
 #include "ui.h"
+#include "prisoner.h"
 
 using namespace std;
 
@@ -46,17 +46,54 @@ int main()
 					break;
 
 				t1.AddText("Strategies must be numbered sequentially thus: XXXX1.txt, XXXX2.txt etc.");
-				t1.AddText("If formatted correctly, please enter the prefix text (XXXX)");
-				t1.AddText("If they are not, please enter \"exit\" and generate some strategies.");
+				t1.AddText("Are the strategies formatted correctly? (Y/N)");
 
-				string prefix = t1.GetString();
+				bool correct = t1.GetResponse();
 
-				if (prefix.compare("exit") == 0)
-					break;
+				int num = 0;
+				vector<string> ids(0);
 
-				t1.AddText("How many strategies would you like to test?");
+				if (correct)
+				{
+					t1.AddText("Please enter the prefix text (XXXX)");
 
-				int num = t1.GetNum();
+					string prefix = t1.GetString();
+
+					t1.AddText("How many strategies would you like to test?");
+
+					num = t1.GetNum();
+
+					for (int i = 1; i <= num; ++i)
+					{
+						string id = prefix;
+						id += to_string(i);
+						id += ".txt";
+						ids.push_back(id);
+					}
+				}
+				else
+				{
+					t1.AddText("Would you like to manually enter some strategy names? (Y/N)");
+					bool enter = t1.GetResponse();
+
+					if (!enter)
+						break;
+
+					t1.AddText("Please enter some strategy names, type \"exit\" when finished");
+
+					string userInput = "";
+					while (userInput.compare("exit") != 0)
+					{
+						userInput = t1.GetString();
+						if (userInput.compare("exit") == 0)
+							break;
+						if (userInput.compare(userInput.size() - 4, 4, ".txt") != 0)
+							if (userInput.compare(userInput.size() - 4, 4, ".TXT") != 0)
+								userInput += ".txt";
+						ids.push_back(userInput);
+						++num;
+					}
+				}
 
 				bool play = false;
 
@@ -67,19 +104,23 @@ int main()
 
 				if (play)
 				{
-					vector<string> ids(0);
-					for (int i = 1; i <= num; ++i)
+					try
 					{
-						string id = prefix;
-						id += to_string(i);
-						id += ".txt";
-						ids.push_back(id);
+						vector<int>* result = Play(ids);
 					}
-					vector<int>* result = Play(ids);
+					catch (const invalid_argument& iae)
+					{
+						string error = "Error: ";
+						error += iae.what();
+						t1.AddText(error);
+						t1.AddText("Continue?... (Y/N)");
+						bool cont = t1.GetResponse();
+						if (!cont)
+							return 1;
+					}
 					generate = false;
-					break;
+break;
 				}
-
 			}
 
 			while (generate)
@@ -122,7 +163,23 @@ int main()
 								id += ".txt";
 								ids.push_back(id);
 							}
-							vector<int>* result = Play(ids);
+
+							try
+							{
+								vector<int>* result = Play(ids);
+							}
+							catch (const invalid_argument& iae)
+							{
+								string error = "Error: ";
+								error += iae.what();
+								t1.AddText(error);
+								tournament = false;
+								t1.AddText("Continue?... (Y/N)");
+								bool cont = t1.GetResponse();
+								if (!cont)
+									return 1;
+							}
+							tournament = false;
 						}
 
 						play = tournament;
@@ -148,14 +205,30 @@ int main()
 		gang = !gang;
 	}
 
-    return 0;
+	return 0;
 }
 
-vector<int>* Play(vector<string>& strats)
+vector<int>* Play(vector<string>& strats) throw (invalid_argument)
 {
+	Terminal t1;
+	t1.TitleBox("Tournament");
+
+	t1.AddText("Would you like to display a strategy's score after the tournament? (Y/N)");
+	bool dispRounds = t1.GetResponse();
+
+	t1.AddText("Would you like to display the score of each head to head game? (Y/N)");
+	bool dispScores = t1.GetResponse();
+
+	if (strats.size() > 10)
+	{
+		t1.AddText("Are you sure (that's a lot of matches) (Y/N)");
+		dispScores = t1.GetResponse();
+	}
+
 	int tens = strats.size() / 10;
 	int leftOver = strats.size() % 10;
 	vector<int> winners(0);
+	vector<int> winnerScores(0);
 	for (int t = 0; t <= tens; ++t)
 	{
 		int scores[10] = { 0 };
@@ -168,31 +241,76 @@ vector<int>* Play(vector<string>& strats)
 				break;
 			max = leftOver;
 		}
+
+		t1.HLine('+', '-');
+		string text = "Round " + to_string(t + 1);
+		t1.AddText(text);
+
 		for (int i = start; i < start + max; ++i)
 		{
 			for (int j = i; j < start + max; ++j)
 			{
-				ReadStrategy strat1(strats[i-1]);
-				if (strat1.OpenFile())
+				ReadStrategy strat1(strats[i - 1]);
+
+				try
 				{
-					Prisoner A(strat1);
-					ReadStrategy strat2(strats[j-1]);
-					if (strat2.OpenFile())
+					if (strat1.OpenFile())
 					{
-						Prisoner B(strat2);
+						Prisoner A(strat1);
+						ReadStrategy strat2(strats[j - 1]);
+						if (strat2.OpenFile())
+						{
+							Prisoner B(strat2);
 
-						for (int k = 0; k < A.GetMaxIterations(); ++k)
-							Game(A, B);
+							for (int k = 0; k < A.GetMaxIterations(); ++k)
+								Game(A, B);
 
-						scores[i - start] += A.GetScore();
-						scores[j - start] += B.GetScore();
+							scores[i - start] += A.GetScore();
+							scores[j - start] += B.GetScore();
+
+							if (dispScores)
+							{
+								string gameScore = strats[i - 1] + " scored " + to_string(A.GetScore()) + ' ';
+								gameScore += strats[j - 1] + " scored " + to_string(B.GetScore());
+								t1.AddText(gameScore);
+							}
+						}
 					}
 				}
+				catch (const invalid_argument& iae)
+				{
+					throw invalid_argument(iae.what());
+				}
+			}
+			if (dispRounds)
+			{
+				string finalScore = "Strategy " + strats[i - 1] + " scored " + to_string(scores[i - start]) + " in total";
+				t1.AddText(finalScore);
 			}
 		}
+
 		int winner = Min(scores);
 		winners.push_back(winner + start);
+		winnerScores.push_back(scores[winner]);
 	}
+
+	t1.HLine('+', '=');
+	t1.AddText("Tournament over, the victors were: ");
+
+	int i = 0;
+	for (auto it = winners.begin(); it != winners.end(); ++it)
+	{
+		string text = "Round " + to_string(i + 1);
+		t1.AddText(text);
+		text = "Strategy " + strats[*it] + " with " + to_string(winnerScores[i]);
+		++i;
+		t1.AddText(text);
+	}
+
+	t1.AddText("Continue...");
+	char exit;
+	cin >> exit;
+
 	return &winners;
 }
 
