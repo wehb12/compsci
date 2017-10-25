@@ -43,7 +43,7 @@ public:
 	inline ReadStrategy(const ReadStrategy& cpy) : Strategy(cpy) { }
 	~ReadStrategy() { }
 
-	bool OpenFile();
+	bool OpenFile() throw (invalid_argument);
 	inline virtual void AddFeature(string txt) { strat->back().push_back(txt); }
 private:
 	void ReadFile(ifstream& file);
@@ -59,7 +59,7 @@ public:
 
 	void AddFeature(string txt) override;
 	void AddFeature(int num);
-	void NewLine();
+	void NewLine() override;
 	void SetFlag(int flagNum);
 	inline bool GetFlag(int flagNum) { return checks[flagNum]; }
 	void PrintStrategy();
