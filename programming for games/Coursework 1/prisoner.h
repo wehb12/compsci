@@ -1,6 +1,5 @@
 #pragma once
 
-#include "stdafx.h"
 #include "strategy.h"
 #include "BST.h"
 #include "comparable.h"
@@ -16,8 +15,12 @@ public:
 
 	int Run();
 	void RegisterOutcome(char outcome);
-	int GetMaxIterations() { return maxIterations; }
-	int GetScore() { return myScore; }
+	inline int GetMaxIterations() { return maxIterations; }
+	inline int GetScore() { return myScore; }
+	inline int GetAllW() { return allOutcomes[0]; }
+	inline int GetAllX() { return allOutcomes[1]; }
+	inline int GetAllY() { return allOutcomes[2]; }
+	inline int GetAllZ() { return allOutcomes[3]; }
 private:
 	void Init(Strategy& str);
 	Strategy strat;
@@ -26,8 +29,8 @@ private:
 	int iterations;
 	int myScore;
 	const int maxIterations = 200;
-	bool CheckForInfLoops(BST<Integer>& tree, int leaf);
 
+	bool CheckForInfLoops(BST<Integer>& tree, int leaf);
 	int Enumerate(string buff);
 	void AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf, int lhs[], int rhs[], int i);
 	char AssignOutcome(bool& expectOutcome, bool& expectGoto, bool& expectLast, bool& expectCompare, bool& expectSymbol, const char last);
