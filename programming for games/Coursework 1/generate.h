@@ -1,5 +1,8 @@
-// generate_strategies.cpp : Defines the entry point for the console application.
-//
+// Will Hinds, Computer Games Engineering MSc - generate.h //
+// ------------------------------------------------------- //
+// Generates strategies                                    //
+
+#pragma once
 
 #include "stdafx.h"
 #include <iostream>
@@ -14,20 +17,21 @@ using namespace std;
 
 bool Symbol(CreateStrategy&, int, float);
 bool AllOutcomes(CreateStrategy&, int);
-bool Integer(CreateStrategy&, int, float);
+bool AddInteger(CreateStrategy&, int, float);
 void ExitCondition(CreateStrategy&, int);
 void LastOutcome(CreateStrategy&, int);
 int PsuedoRand(int, float&);
+int Generate(int, float);
 
-int main()
+int Generate(const int stratsTotal, float length)
 {
-	const float length = 0.05;	// number that dictates length - not length in lines, probability of it being longer
+	// length doesn't dictate length in lines, but probability of it being longer
+	length = length * 0.1;
 
 	BST<Strategy> stratTree;
 
 	int attempts = 0;
 	int maxAttempts = 10000;
-	int stratsTotal = 100;
 
 	for (int strats = 1; strats <= stratsTotal; ++strats)
 	{
@@ -37,7 +41,7 @@ int main()
 		bool goTo = false;
 
 		seed = rand() % 1000;
- 		if (seed == 0)
+		if (seed == 0)
 			seed = 1;
 
 		string id = "strat";
@@ -79,7 +83,7 @@ int main()
 					while (!exitFlag)
 					{
 						if (randNum <= 1)
-							symbol = Integer(strat, seed, exp);
+							symbol = AddInteger(strat, seed, exp);
 						else
 							symbol = AllOutcomes(strat, randNum);
 
@@ -243,7 +247,7 @@ bool AllOutcomes(CreateStrategy& strat, int num)
 	return false;
 }
 
-bool Integer(CreateStrategy& strat, int num, float exp)
+bool AddInteger(CreateStrategy& strat, int num, float exp)
 {
 	int temp = PsuedoRand(num, exp);
 	temp = temp % 200;
@@ -308,7 +312,7 @@ int PsuedoRand(int base, float& exp)
 
 	if ((exp < 0.2) && (maxExp >= 0.2))
 		exp = 0.2;
-	else if(exp < 0.2)
+	else if (exp < 0.2)
 		return base;
 
 	return (int)pow(base, exp);
