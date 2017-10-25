@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <math.h>
@@ -12,6 +11,12 @@
 #include <vector>
 #include "strategy.h"
 #include "BST.h"
+
+#ifdef _WIN32
+#define PATH "strat"
+#else
+#define PATH "Desktop/Uni/Masters/Programming_for_Games/Coursework_1/strat"
+#endif
 
 using namespace std;
 
@@ -44,7 +49,7 @@ int Generate(const int stratsTotal, float length)
 		if (seed == 0)
 			seed = 1;
 
-		string id = "strat";
+		string id = PATH;
 		id += to_string(strats);
 		id += ".txt";
 
