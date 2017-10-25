@@ -4,7 +4,7 @@
 #include <iostream>
 #include "stdafx.h"
 #include "generate.h"
-#include "read.h"
+#include "prisoner.h"
 #include "ui.h"
 
 using namespace std;
