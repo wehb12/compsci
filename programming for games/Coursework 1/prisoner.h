@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "strategy.h"
 #include "BST.h"
+#include "comparable.h"
 
 using namespace std;
 
@@ -27,10 +28,9 @@ private:
 	const int maxIterations = 200;
 	bool CheckForInfLoops(BST<Integer>& tree, int leaf);
 
-
 	int Enumerate(string buff);
 	void AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf, int lhs[], int rhs[], int i);
-	char AssignOutcome(bool& expectOutcome, bool& expectGoto, const char last);
+	char AssignOutcome(bool& expectOutcome, bool& expectGoto, bool& expectLast, bool& expectCompare, bool& expectSymbol, const char last);
 	int Sum(int arr[]);
 };
 
@@ -50,7 +50,10 @@ int Prisoner::Run()
 	if (iterations == maxIterations)
 		return -1;
 
-	unsigned int line = 1;
+	unsigned int line = 0;
+	unsigned int fileLine = strat.GetLineNo(line);
+	if (fileLine == -1)
+		return -4;
 	unsigned int word = 1;
 
 	enum keywords
@@ -88,6 +91,7 @@ int Prisoner::Run()
 	bool expectSymbol = false;
 	bool expectCompare = false;
 	bool expectOutcome = false;
+	bool expectLast = false;
 	// [0] - ALL_W, [1] - ALL_X, [2] - ALL_Y, [3] - ALL_Z,
 	// [4] - ITERATIONS, [5] - MYSCORE, [6] - INTEGER
 	int lhs[7] = { 0, 0, 0, 0, 0, 0, 0 };
@@ -101,7 +105,7 @@ int Prisoner::Run()
 
 	while (1)
 	{
-		string buff = strat.GetInstr(line, word);
+		string buff = strat.GetInstr(fileLine, word);
 
 		switch (Enumerate(buff))
 		{
@@ -116,6 +120,8 @@ int Prisoner::Run()
 			break;
 		case IF:
 			expectVariable = true;
+			expectLast = true;
+			expectOutcome = true;
 			break;
 		case GOTO:
 			if (expectGoto || (expectSymbol && secondHalf))
@@ -146,29 +152,33 @@ int Prisoner::Run()
 				AssignVariable(expectVariable, expectSymbol, minus, secondHalf, lhs, rhs, 5);
 			break;
 		case LAST:
-			if (expectVariable)
+			if (expectLast && !expectCompare)
 			{
 				expectVariable = false;
 				expectSymbol = true;
 				expectCompare = true;
-				expectOutcome = true;
+				if (!expectOutcome)
+					expectGoto = true;
+				else
+					expectOutcome = true;
+				expectLast = false;
 			}
 			break;
 		case W:
 			if (expectOutcome && !expectCompare)
-				ifLast = AssignOutcome(expectOutcome, expectGoto, 'W');
+				ifLast = AssignOutcome(expectOutcome, expectGoto, expectLast, expectCompare, expectSymbol, 'W');
 			break;
 		case X:
 			if (expectOutcome && !expectCompare)
-				ifLast = AssignOutcome(expectOutcome, expectGoto, 'X');
+				ifLast = AssignOutcome(expectOutcome, expectGoto, expectLast, expectCompare, expectSymbol, 'X');
 			break;
 		case Y:
 			if (expectOutcome && !expectCompare)
-				ifLast = AssignOutcome(expectOutcome, expectGoto, 'Y');
+				ifLast = AssignOutcome(expectOutcome, expectGoto, expectLast, expectCompare, expectSymbol, 'Y');
 			break;
 		case Z:
 			if (expectOutcome && !expectCompare)
-				ifLast = AssignOutcome(expectOutcome, expectGoto, 'Z');
+				ifLast = AssignOutcome(expectOutcome, expectGoto, expectLast, expectCompare, expectSymbol, 'Z');
 			break;
 		case NUMBER:
 			if (expectLineNo)
@@ -177,38 +187,75 @@ int Prisoner::Run()
 				if (ifLast != '\0')
 				{
 					if (lastOutcome == ifLast)
-						line = stoi(buff);
+					{
+						fileLine = stoi(buff);
+						line = strat.GetActualLine(fileLine);
+					}
 					else
+					{
 						++line;
+						fileLine = strat.GetLineNo(line);
+					}
 				}
 				else
 				{
 					switch (compareOperator)
 					{
-						case 0:
-							if (Sum(lhs) == Sum(rhs))
-								line = stoi(buff);
-							else
-								++line;
-							break;
-						case 1:
-							if (Sum(lhs) > Sum(rhs))
-								line = stoi(buff);
-							else
-								++line;
-							break;
-						case 2:
-							if (Sum(lhs) < Sum(rhs))
-								line = stoi(buff);
-							else
-								++line;
-							break;
+					case 0:
+						if (Sum(lhs) == Sum(rhs))
+						{
+							fileLine = stoi(buff);
+							line = strat.GetActualLine(fileLine);
+						}
+						else
+						{
+							++line;
+							fileLine = strat.GetLineNo(line);
+						}
+						break;
+					case 1:
+						if (Sum(lhs) > Sum(rhs))
+						{
+							fileLine = stoi(buff);
+							line = strat.GetActualLine(fileLine);
+						}
+						else
+						{
+							++line;
+							fileLine = strat.GetLineNo(line);
+						}
+						break;
+					case 2:
+						if (Sum(lhs) < Sum(rhs))
+						{
+							fileLine = stoi(buff);
+							line = strat.GetActualLine(fileLine);
+						}
+						else
+						{
+							++line;
+							fileLine = strat.GetLineNo(line);
+						}
+						break;
 					}
 				}
 				word = 0;
-				line = stoi(strat.GetInstr(line, word));
 				if (CheckForInfLoops(lineTree, line))
 					return -3;
+
+				expectVariable = false;
+				expectGoto = false;
+				expectLineNo = false;
+				expectSymbol = false;
+				expectCompare = false;
+				expectOutcome = false;
+				expectLast = false;
+				memset(lhs, 0, 7 * sizeof(int));
+				memset(rhs, 0, 7 * sizeof(int));
+				compareOperator = 0;
+				ifLast = '\0';
+				secondHalf = false;
+				minus = false;
 			}
 			else if (expectVariable)
 			{
@@ -306,10 +353,16 @@ int Prisoner::Sum(int arr[])
 	return sum;
 }
 
-char Prisoner::AssignOutcome(bool& expectOutcome, bool& expectGoto, const char last)
+char Prisoner::AssignOutcome(bool& expectOutcome, bool& expectGoto, bool& expectLast, bool& expectCompare, bool& expectSymbol, const char last)
 {
 	expectOutcome = false;
-	expectGoto = true;
+	if (!expectLast)
+		expectGoto = true;
+	else
+	{
+		expectSymbol = true;
+		expectCompare = true;
+	}
 	return last;
 }
 
@@ -358,7 +411,10 @@ int Prisoner::Enumerate(string buff)
 	if (buff.compare("X") == 0) return 13;
 	if (buff.compare("Y") == 0) return 14;
 	if (buff.compare("Z") == 0) return 15;
-	if ((buff.compare(0, 1, "9") <= 0) && (buff.compare(0, 1, "0") >= 0)) return 16;
+	int first = 0;
+	if (buff.compare(0, 1, "-") == 0)
+		first = 1;
+	if ((buff.compare(first, 1, "9") <= 0) && (buff.compare(first, 1, "0") >= 0)) return 16;
 	if (buff.compare("+") == 0) return 17;
 	if (buff.compare("-") == 0) return 18;
 	if (buff.compare("=") == 0) return 19;
