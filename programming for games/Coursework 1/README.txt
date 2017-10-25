@@ -26,3 +26,4 @@ TO DO:
 8. [ ] Check what OS is in use and adjust ClearScreen() accordingly
 9. [ ] Display statsistics from each game
   8.1 [ ] Such as how many times someone stayed silent, betrayed, how many wins AND total score
+10. [ ] Comment code
