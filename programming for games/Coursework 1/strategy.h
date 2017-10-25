@@ -27,6 +27,8 @@ public:
 	inline string GetName() { return name; }
 	virtual void NewLine();
 	string GetInstr(unsigned int line, unsigned int word);
+	int GetLineNo(int line);
+	int GetActualLine(int fileLine);
 	virtual int CompareTo(const Comparable& rhs) override;
 protected:
 	string name;
@@ -116,15 +118,39 @@ string Strategy::GetInstr(unsigned int line, unsigned int word)
 {
 	for (auto it = strat->begin(); it != strat->end(); ++it)
 	{
-		if ((*it)[0].compare(to_string(line)) == 0)
+		if (it->size() != 0)
 		{
-			if ((*it).size() > word)
-				return (*it)[word];
-			else
-				return "EOL";
+			if ((*it)[0].compare(to_string(line)) == 0)
+			{
+				if ((*it).size() > word)
+					return (*it)[word];
+				else
+					return "EOL";
+			}
 		}
 	}
 	return "EOF";
+}
+
+int Strategy::GetLineNo(int line)
+{
+	if (strat->size() > line)
+		if ((*strat)[line].size() > 0)
+			return stoi((*strat)[line][0]);
+	return -1;
+}
+
+int Strategy::GetActualLine(int fileLine)
+{
+	int i = 0;
+	for (auto it = strat->begin(); it != strat->end(); ++it)
+	{
+		if (it->size() > 0)
+			if (stoi((*it)[0]) == fileLine)
+				return i;
+		++i;
+	}
+	return -1;
 }
 
 int Strategy::CompareTo(const Comparable& rhs)
@@ -165,11 +191,14 @@ int Strategy::CompareTo(const Comparable& rhs)
 	return 0;
 }
 
-bool ReadStrategy::OpenFile()
+bool ReadStrategy::OpenFile() throw (invalid_argument)
 {
 	ifstream file;
 
 	file.open(name);
+
+	if (file.fail())
+		throw invalid_argument("no file exists " + name);
 
 	if (!file.is_open())
 	{
