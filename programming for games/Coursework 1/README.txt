@@ -23,3 +23,4 @@ TO DO:
 6. [ ] Use threads to check for user input (exit) while tournament running
   6.1 [ ] Display est. run time?
 7. [ ] Check that all heap variables are deleted
+8. [ ] Check what OS is in use and adjust ClearScreen() accordingly
