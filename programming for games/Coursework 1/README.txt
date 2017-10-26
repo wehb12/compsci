@@ -32,4 +32,4 @@ TO DO:
 13. [x] Output statistics to a file
   13.1 [x] Make a Table class and override << operator to send to a file
 14. [x] GANG DILEMMA - Test all combinations of strategies against a random but constant set of strategies
-15. [ ] Automatically print file at end with all scores in, for both.
+15. [x] Automatically print file at end with all scores in, for both.
