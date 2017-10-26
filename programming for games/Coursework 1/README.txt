@@ -30,4 +30,5 @@ TO DO:
 11. [ ] Offer default run settings option
 12. [ ] Allow the user the option to run a tournament of the victors of the last tournament
 13. [ ] Output statistics to a file
-14. [ ] Make a Table class and override << operator to send to a file
+  13.1 [ ] Make a Table class and override << operator to send to a file
+14. [ ] GANG DILEMMA - Test all combinations of strategies against a random but constant set of strategies
