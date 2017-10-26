@@ -28,3 +28,4 @@ TO DO:
   8.1 [ ] Such as how many times someone stayed silent, betrayed, how many wins AND total score
 10. [ ] Comment code
 11. [ ] Offer default run settings option
+12. [ ] Allow the user the option to run a tournament of the victors of the last tournament
