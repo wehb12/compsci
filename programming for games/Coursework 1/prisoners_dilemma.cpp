@@ -1,15 +1,21 @@
 // prisoners_dilemma.cpp : Defines the entry point for the console application.
 //
 
+#include "stdafx.h"
 #include <iostream>
 #include "generate.h"
 #include "ui.h"
 #include "prisoner.h"
+#include "gang.h"
 
 using namespace std;
 
 vector<string>* Play(vector<string>&) throw (invalid_argument);
-void Game(Prisoner&, Prisoner&);
+vector<string>* GangPlay(vector<string>&) throw (invalid_argument);
+template <typename T>
+void Game(T&, T&);
+
+Gang* ConstructSecondGang(vector<string>&, const int, const int, const int, const int, const int) throw (invalid_argument);
 int Min(vector<int>&);
 
 int main()
@@ -31,6 +37,9 @@ int main()
 
 		while (prisoners)
 		{
+			vector<string> ids(0);
+			bool play = false;
+
 			t.AddText("Would you like to generate strategies? (Y/N)");
 
 			bool generate = t.GetResponse();
@@ -50,7 +59,6 @@ int main()
 				bool correct = t.GetResponse();
 
 				int num = 0;
-				vector<string> ids(0);
 
 				if (correct)
 				{
@@ -69,6 +77,8 @@ int main()
 						id += ".txt";
 						ids.push_back(id);
 					}
+
+					generate = false;
 				}
 				else
 				{
@@ -94,33 +104,12 @@ int main()
 					}
 				}
 
-				bool play = false;
-
 				if (num > 0)
-					play = true;
-				else
-					break;
-
-				if (play)
 				{
-					try
-					{
-						vector<string>* result = Play(ids);
-						delete result;
-					}
-					catch (const invalid_argument& iae)
-					{
-						string error = "Error: ";
-						error += iae.what();
-						t.AddText(error);
-						t.AddText("Continue?... (Y/N)");
-						bool cont = t.GetResponse();
-						if (!cont)
-							return 1;
-					}
+					play = true;
 					generate = false;
-					break;
 				}
+				break;
 			}
 
 			while (generate)
@@ -130,14 +119,14 @@ int main()
 				int num = 0;
 				num = t.GetNum();
 
-				bool play = false;
+				bool chooseLength = false;
 
 				if (num > 0)
-					play = true;
+					chooseLength = true;
 
-				generate = play;
+				generate = chooseLength;
 
-				while (play)
+				while (chooseLength)
 				{
 					t.AddText("How long should they be? (number between 0.1 and 1)");
 
@@ -151,11 +140,10 @@ int main()
 						buff += " strategies generated, Play a tournament? (Y/N)";
 						t.AddText(buff);
 
-						bool tournament = t.GetResponse();
+						play = t.GetResponse();
 
-						if (tournament)
+						if (play)
 						{
-							vector<string> ids(0);
 							for (int i = 1; i <= num; ++i)
 							{
 								string id = "strat";
@@ -163,35 +151,38 @@ int main()
 								id += ".txt";
 								ids.push_back(id);
 							}
-
-							try
-							{
-								vector<string>* result = Play(ids);
-								delete result;
-							}
-							catch (const invalid_argument& iae)
-							{
-								string error = "Error: ";
-								error += iae.what();
-								t.AddText(error);
-								tournament = false;
-								t.AddText("Continue?... (Y/N)");
-								bool cont = t.GetResponse();
-								if (!cont)
-									return 1;
-							}
-							tournament = false;
 						}
 
-						play = tournament;
-						generate = tournament;
+						chooseLength = false;
+						generate = false;
 					}
 					else
 						t.AddText("Please enter a higher number");
 				}
 			}
 
-			prisoners = generate;
+			if (play)
+			{
+				try
+				{
+					vector<string>* result = Play(ids);
+					delete result;
+				}
+				catch (const invalid_argument& iae)
+				{
+					string error = "Error: ";
+					error += iae.what();
+					t.AddText(error);
+					play = false;
+					t.AddText("Continue?... (Y/N)");
+					bool cont = t.GetResponse();
+					if (!cont)
+						return 1;
+				}
+				play = false;
+			}
+
+			prisoners = play;
 		}
 	}
 
@@ -206,9 +197,34 @@ int main()
 
 		bool gang = t.GetResponse();
 
-		while(gang)
+		if (gang)
 		{
+			Generate(10, 0.5);
+			vector<string> ids(0);
+			for (int i = 1; i <= 10; ++i)
+			{
+				string id = "strat";
+				id += to_string(i);
+				id += ".txt";
+				ids.push_back(id);
+			}
 
+			try
+			{
+				vector<string>* result = GangPlay(ids);
+				delete result;
+			}
+			catch (const invalid_argument& iae)
+			{
+				string error = "Error: ";
+				error += iae.what();
+				t.AddText(error);
+				gang = false;
+				t.AddText("Continue?... (Y/N)");
+				bool cont = t.GetResponse();
+				if (!cont)
+					return 1;
+			}
 		}
 
 		gangMenu = gang;
@@ -399,7 +415,136 @@ vector<string>* Play(vector<string>& strats) throw (invalid_argument)
 	return winners;
 }
 
-void Game(Prisoner& A, Prisoner& B)
+vector<string>* GangPlay(vector<string>& strats)
+{
+	Terminal t;
+	t.TitleBox("Gang Tournament");
+
+	int combinations = strats.size();
+	int end = combinations - 5;
+
+	for (int i = 1; i < end; ++i)
+		combinations = combinations * (strats.size() - i);
+
+	combinations = combinations / 120;
+	string text = "For " + to_string(strats.size()) + " strategies there are " + to_string(combinations) + " permutations";
+	t.AddText(text);
+
+	t.AddText("Would you like to test every permutation? (Y/N)");
+	bool permu = t.GetResponse();
+
+	int jMax = 2;
+	int kMax = 3;
+	int mMax = 4;
+	int nMax = 5;
+	if (permu)
+	{
+		jMax = 7;
+		kMax = 8;
+		mMax = 9;
+		nMax = 10;
+	}
+
+	t.AddText("Would you like to display the stats of each head-to-head game? (Y/N)");
+	bool dispStats = t.GetResponse();
+
+	vector<string>* winners = new vector<string>;
+
+	Gang* M;
+	Gang* P;
+
+	int i = 0;
+	int game = 0;
+	for (int j = i + 1; j < jMax; ++j)
+	{
+		for (int k = j + 1; k < kMax; ++k)
+		{
+			for (int m = k + 1; m < mMax; ++m)
+			{
+				for (int n = m + 1; n < nMax; ++n)
+				{
+					vector<vector<string> > statsM;
+					vector<vector<string> > statsP;
+					vector<string> titles;
+					titles.push_back("Score");
+					titles.push_back("ALL_W");
+					titles.push_back("ALL_X");
+					titles.push_back("ALL_Y");
+					titles.push_back("ALL_Z");
+					titles.push_back("ALL_A");
+					titles.push_back("ALL_B");
+					titles.push_back("ALL_C");
+					statsM.push_back(titles);
+					statsP.push_back(titles);
+					try
+					{
+						++game;
+						ReadStrategy strat1(strats[i]);
+						strat1.OpenFile();
+						ReadStrategy strat2(strats[j]);
+						strat2.OpenFile();
+						ReadStrategy strat3(strats[k]);
+						strat3.OpenFile();
+						ReadStrategy strat4(strats[m]);
+						strat4.OpenFile();
+						ReadStrategy strat5(strats[n]);
+						strat5.OpenFile();
+
+						M = new Gang(strat1, strat2, strat3, strat4, strat5);
+						P = ConstructSecondGang(strats, i, j, k, m, n);
+
+						for (int q = 0; q < M->GetMaxIterations(); ++q)
+							Game(*M, *P);
+
+						vector<string> tableLineM;
+						tableLineM.push_back(to_string(M->GetScore()));
+						tableLineM.push_back(to_string(M->GetAllW()));
+						tableLineM.push_back(to_string(M->GetAllX()));
+						tableLineM.push_back(to_string(M->GetAllY()));
+						tableLineM.push_back(to_string(M->GetAllZ()));
+						tableLineM.push_back(to_string(M->GetAllA()));
+						tableLineM.push_back(to_string(M->GetAllB()));
+						tableLineM.push_back(to_string(M->GetAllC()));
+						statsM.push_back(tableLineM);
+
+						vector<string> tableLineP;
+						tableLineP.push_back(to_string(P->GetScore()));
+						tableLineP.push_back(to_string(P->GetAllW()));
+						tableLineP.push_back(to_string(P->GetAllX()));
+						tableLineP.push_back(to_string(P->GetAllY()));
+						tableLineP.push_back(to_string(P->GetAllZ()));
+						tableLineP.push_back(to_string(P->GetAllA()));
+						tableLineP.push_back(to_string(P->GetAllB()));
+						tableLineP.push_back(to_string(P->GetAllC()));
+						statsP.push_back(tableLineP);
+
+						t.AddText("Gang 1:");
+						t.DrawTable(&statsM);
+						t.AddText("Gang 2:");
+						t.DrawTable(&statsP);
+
+						text = "Game " + to_string(game);
+						t.AddText(text);
+					}
+					catch (const invalid_argument& iae)
+					{
+						delete winners;
+						delete M;
+						delete P;
+						throw invalid_argument(iae.what());
+					}
+				}
+			}
+		}
+	}
+
+	delete M;
+	delete P;
+	return winners;
+}
+
+template <typename T>
+void Game(T& A, T& B)
 {
 	int AOutcome = A.Run();
 	int BOutcome = B.Run();
@@ -408,30 +553,64 @@ void Game(Prisoner& A, Prisoner& B)
 	{
 		if (BOutcome >= 0)
 		{
+			// if A BETRAY
 			if (AOutcome == 0)
 			{
+				// if B BETRAY
 				if (BOutcome == 0)
 				{
 					A.RegisterOutcome('Z');
 					B.RegisterOutcome('Z');
 				}
-				else
+				// if B SILENCE
+				else if (BOutcome == 1)
 				{
 					A.RegisterOutcome('Y');
 					B.RegisterOutcome('X');
 				}
+				// if B MIXED
+				else
+				{
+					A.RegisterOutcome('A');
+					B.RegisterOutcome('B');
+				}
 			}
-			else
+			// if A SILENCE
+			else if (AOutcome == 1)
 			{
+				// if B BETRAY
 				if (BOutcome == 0)
 				{
 					A.RegisterOutcome('X');
 					B.RegisterOutcome('Y');
 				}
-				else
+				// if B SILENCE
+				else if (BOutcome == 1)
 				{
 					A.RegisterOutcome('W');
 					B.RegisterOutcome('W');
+				}
+				// if B MIXED
+				else
+				{
+					A.RegisterOutcome('B');
+					B.RegisterOutcome('A');
+				}
+			}
+			// if A MIXED
+			else
+			{
+				// if B had more BETRAYs
+				if ((BOutcome == 0) || (BOutcome > AOutcome))
+				{
+					A.RegisterOutcome('B');
+					B.RegisterOutcome('A');
+				}
+				// if B had fewer BETRAYs
+				else
+				{
+					A.RegisterOutcome('A');
+					B.RegisterOutcome('B');
 				}
 			}
 		}
@@ -460,6 +639,65 @@ void Game(Prisoner& A, Prisoner& B)
 		else
 			cout << "unknown error." << endl;
 	};
+}
+
+Gang * ConstructSecondGang(vector<string>& strats, const int i, const int j, const int k, const int m, const int n) throw (invalid_argument)
+{
+	int index[5];
+
+	int ind = 0;
+	for (int u = 9; u > n; --u)
+	{
+		index[ind] = u;
+		++ind;
+	}
+	for (int u = n - 1; u > m; --u)
+	{
+		index[ind] = u;
+		++ind;
+	}
+	for (int u = m - 1; u > k; --u)
+	{
+		index[ind] = u;
+		++ind;
+	}
+	for (int u = k - 1; u > j; --u)
+	{
+		index[ind] = u;
+		++ind;
+	}
+	for (int u = j - 1; u > i; --u)
+	{
+		index[ind] = u;
+		++ind;
+	}
+	for (int u = i - 1; u >= 0; --u)
+	{
+		index[ind] = u;
+		++ind;
+	}
+
+	try
+	{
+		ReadStrategy strat1(strats[i]);
+		strat1.OpenFile();
+		ReadStrategy strat2(strats[j]);
+		strat2.OpenFile();
+		ReadStrategy strat3(strats[k]);
+		strat3.OpenFile();
+		ReadStrategy strat4(strats[m]);
+		strat4.OpenFile();
+		ReadStrategy strat5(strats[n]);
+		strat5.OpenFile();
+
+		Gang* Second = new Gang(strat1, strat2, strat3, strat4, strat5);
+
+		return Second;
+	}
+	catch (const invalid_argument& iae)
+	{
+		throw invalid_argument(iae.what());
+	}
 }
 
 int Min(vector<int>& vec)
