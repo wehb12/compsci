@@ -72,7 +72,7 @@ void Terminal::DrawTable(vector<vector<string> >* headings)
 	int tableWidth = width - (space * 2);
 
 	TableHLine(space, tableWidth);
-	for( auto it = headings->begin(); it != headings->end(); ++it)
+	for (auto it = headings->begin(); it != headings->end(); ++it)
 	{
 		DrawColumns(columnWidth, numCols);
 
@@ -122,8 +122,11 @@ void Terminal::DrawColumns(int columnWidth, int numCols)
 void Terminal::FillColumn(int columnWidth, string heading)
 {
 	cout << '|';
-
-	int gap = (columnWidth - 2 - heading.size()) / 2;
+	int gap = -1;
+	if (heading.size() <= (columnWidth - 2))
+		gap = (columnWidth - 2 - heading.size()) / 2;
+	else if (heading.size() > (columnWidth - 2))
+		heading.assign(heading, 0, (columnWidth - 2));
 	for (int i = 0; i <= gap; ++i)
 		cout << ' ';
 	cout << heading;
