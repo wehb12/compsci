@@ -11,7 +11,7 @@ class Prisoner
 public:
 	Prisoner(Strategy& str) { Init(str); }
 	Prisoner() {  }
-	Prisoner(Prisoner & cpy) {  }
+	Prisoner(Prisoner& cpy) {  }
 
 	int Run();
 	void RegisterOutcome(char outcome);
@@ -21,11 +21,14 @@ public:
 	inline int GetAllX() { return allOutcomes[1]; }
 	inline int GetAllY() { return allOutcomes[2]; }
 	inline int GetAllZ() { return allOutcomes[3]; }
+	inline void SetStrat(Strategy& str) { strat = str; }
+	Prisoner& operator=(Prisoner& rhs);
 private:
 	void Init(Strategy& str);
 	Strategy strat;
 	char lastOutcome;
-	int allOutcomes[4];
+	// [W] [X] [Y] [Z] [A] [B] [C]
+	int allOutcomes[7];
 	int iterations;
 	int myScore;
 	const int maxIterations = 200;
@@ -47,7 +50,7 @@ void Prisoner::Init(Strategy& str)
 	myScore = 0;
 }
 
-// returns 0 for BETRAY and 1 for SILENCE and -1 for ERROR
+// returns 0 for BETRAY and 1 for SILENCE and -ve number for ERROR
 int Prisoner::Run()
 {
 	if (iterations == maxIterations)
@@ -450,4 +453,17 @@ void Prisoner::RegisterOutcome(char outcome)
 		myScore += 4;
 		break;
 	}
+}
+
+Prisoner& Prisoner::operator=(Prisoner& rhs)
+{
+	if (this == &rhs)
+		return *this;
+
+	strat = rhs.strat;
+	lastOutcome = rhs.lastOutcome;
+	for (int i = 0; i < 4; ++i)
+		allOutcomes[i] = rhs.allOutcomes[i];
+	iterations = rhs.iterations;
+	myScore = rhs.myScore;
 }
