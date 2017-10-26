@@ -11,11 +11,11 @@
 using namespace std;
 
 vector<string>* Play(vector<string>&) throw (invalid_argument);
-vector<string>* GangPlay(vector<string>&) throw (invalid_argument);
+vector<string>* GangPlay(vector<string>&, bool spy = false) throw (invalid_argument);
 template <typename T>
 void Game(T&, T&);
 
-Gang* ConstructSecondGang(vector<string>&, const int, const int, const int, const int, const int) throw (invalid_argument);
+Gang* ConstructSecondGang(vector<string>&, const int, const int, const int, const int, const int, vector<int>&) throw (invalid_argument);
 int Min(vector<int>&);
 
 int main()
@@ -196,38 +196,118 @@ int main()
 		t.AddText("Would you like to play the Prisoner's Gang Dilemma? (Y/N)");
 
 		bool gang = t.GetResponse();
+		gangMenu = gang;
 
-		if (gang)
+		while (gang)
 		{
-			Generate(10, 0.5);
-			vector<string> ids(0);
-			for (int i = 1; i <= 10; ++i)
-			{
-				string id = "strat";
-				id += to_string(i);
-				id += ".txt";
-				ids.push_back(id);
-			}
+			t.AddText("1. You can play 10 unique strategies against each other");
+			t.AddText("2. Or test every permutation of 10 strategies against a constant set of 5");
+			t.AddText("Would you like Option 1 or Option 2?");
 
-			try
+			int option = t.GetNum();
+			bool generate = false;
+			if ((option == 1) || (option == 2))
+				generate = true;
+			else
+				t.AddText("Please enter either '1' or '2'");
+
+			if (generate)
 			{
-				vector<string>* result = GangPlay(ids);
-				delete result;
-			}
-			catch (const invalid_argument& iae)
-			{
-				string error = "Error: ";
-				error += iae.what();
-				t.AddText(error);
-				gang = false;
-				t.AddText("Continue?... (Y/N)");
-				bool cont = t.GetResponse();
-				if (!cont)
-					return 1;
+				t.AddText("Would you like to manually enter some strategy names? (Y/N)");
+				bool enter = t.GetResponse();
+
+				int num;
+				if (option == 1)
+					num = 10;
+				else
+					num = 15;
+				vector<string> ids(0);
+
+				if (!enter)
+				{
+					Generate(num, 0.5);
+					string text = to_string(num) + " strategies have been generated";
+					t.AddText(text);
+
+					for (int i = 1; i <= num; ++i)
+					{
+						string id = "strat";
+						id += to_string(i);
+						id += ".txt";
+						ids.push_back(id);
+					}
+					enter = true;
+				}
+				else
+				{
+					string text = "Please enter " + to_string(num) + " strategy names, or type \"exit\"";
+					t.AddText(text);
+
+					ids.clear();
+					string userInput = "";
+					int userNum = 0;
+					while ((userInput.compare("exit") != 0) && (userNum != num))
+					{
+						userInput = t.GetString();
+						if (userInput.compare("exit") == 0)
+							break;
+						if (userInput.size() >= 4)
+						{
+							if (userInput.compare(userInput.size() - 4, 4, ".txt") != 0)
+								if (userInput.compare(userInput.size() - 4, 4, ".TXT") != 0)
+									userInput += ".txt";
+						}
+						else
+							userInput += ".txt";
+						ids.push_back(userInput);
+						++userNum;
+					}
+					if (userInput.compare("exit") == 0)
+					{
+						enter = false;
+						generate = false;
+						gang = false;
+					}
+				}
+
+				if (enter)
+				{
+					try
+					{
+						vector<string>* result = GangPlay(ids);
+
+						t.AddText("Would you like to replay, with a Spy involved disrupting the best team? (Y/N)");
+						bool spy = t.GetResponse();
+
+						if (spy)
+						{
+							for (int i = 0; i < 5; ++i)
+							{
+								if (ids.size() == 15)
+									result->push_back(ids[10 + i]);
+								else
+									result->push_back(ids[5 + i]);
+							}
+							GangPlay(*result, true);
+						}
+
+						gang = false;
+						delete result;
+					}
+					catch (const invalid_argument& iae)
+					{
+						string error = "Error: ";
+						error += iae.what();
+						t.AddText(error);
+						gang = false;
+						t.AddText("Continue?... (Y/N)");
+						bool cont = t.GetResponse();
+						if (!cont)
+							return 1;
+					}
+				}
 			}
 		}
-
-		gangMenu = gang;
 	}
 
 	return 0;
@@ -277,6 +357,9 @@ vector<string>* Play(vector<string>& strats) throw (invalid_argument)
 
 	t.AddText("Would you like to display the stats of each head-to-head game? (Y/N)");
 	bool dispStats = t.GetResponse();
+
+	t.AddText("Would you like to print the stats of each head-to-head game to a file? (Y/N)");
+	bool printStats = t.GetResponse();
 
 	if ((strats.size() > 10) && dispStats)
 	{
@@ -345,7 +428,7 @@ vector<string>* Play(vector<string>& strats) throw (invalid_argument)
 							scores[i - start] += A.GetScore();
 							scores[j - start] += B.GetScore();
 
-							if (dispStats)
+							if (dispStats || printStats)
 							{
 								text = "Game " + to_string(game);
 								t.AddText(text);
@@ -372,6 +455,15 @@ vector<string>* Play(vector<string>& strats) throw (invalid_argument)
 								text = "Strategy " + strats[j - 1] + ":";
 								t.AddText(text);
 								t.DrawTable(&statsB);
+
+								if (printStats)
+								{
+									string nameM = "stats" + to_string(i) + ".txt";
+									string nameP = "stats" + to_string(j) + ".txt";
+
+									t.PrintTable(nameM, &statsA);
+									t.PrintTable(nameP, &statsB);
+								}
 							}
 						}
 					}
@@ -415,29 +507,46 @@ vector<string>* Play(vector<string>& strats) throw (invalid_argument)
 	return winners;
 }
 
-vector<string>* GangPlay(vector<string>& strats)
+vector<string>* GangPlay(vector<string>& strats, bool spy)
 {
 	Terminal t;
-	t.TitleBox("Gang Tournament");
 
-	int combinations = strats.size();
-	int end = combinations - 5;
+	float prob = 0;
+	if (!spy)
+		t.TitleBox("Gang Tournament");
+	else
+	{
+		t.TitleBox("Gang Dilemma With Spy");
+		t.AddText("With what probability do you want the leader to change their choice? (0 to 1)");
+		prob = t.GetFloat();
+	}
 
-	for (int i = 1; i < end; ++i)
-		combinations = combinations * (strats.size() - i);
+	bool control = false;
+	if (strats.size() == 15)
+		control = true;
 
-	combinations = combinations / 120;
-	string text = "For " + to_string(strats.size()) + " strategies there are " + to_string(combinations) + " permutations";
-	t.AddText(text);
+	bool permu = true;
+	if (!control && !spy)
+	{
+		int combinations = strats.size();
+		int end = combinations - 5;
 
-	t.AddText("Would you like to test every permutation? (Y/N)");
-	bool permu = t.GetResponse();
+		for (int i = 1; i < end; ++i)
+			combinations = combinations * (strats.size() - i);
+
+		combinations = combinations / 240;
+		string text = "For " + to_string(strats.size()) + " strategies there are " + to_string(combinations) + " permutations";
+		t.AddText(text);
+
+		t.AddText("Would you like to test every permutation? (Y/N)");
+		permu = t.GetResponse();
+	}
 
 	int jMax = 2;
 	int kMax = 3;
 	int mMax = 4;
 	int nMax = 5;
-	if (permu)
+	if (permu && !spy)
 	{
 		jMax = 7;
 		kMax = 8;
@@ -448,98 +557,262 @@ vector<string>* GangPlay(vector<string>& strats)
 	t.AddText("Would you like to display the stats of each head-to-head game? (Y/N)");
 	bool dispStats = t.GetResponse();
 
+	t.AddText("Would you like to print the stats of each head-to-head game to a file? (Y/N)");
+	bool printStats = t.GetResponse();
+
+	vector<vector<int>> allScores;
 	vector<string>* winners = new vector<string>;
 
-	Gang* M;
-	Gang* P;
+	int iMax = 1;
+	if (control)
+		iMax = 6;
 
-	int i = 0;
 	int game = 0;
-	for (int j = i + 1; j < jMax; ++j)
+	
+	int spyMax = 1;
+	if (spy)
+		spyMax = 20;
+
+	for (int spyProb = 0; spyProb <= spyMax; spyProb += 5)
 	{
-		for (int k = j + 1; k < kMax; ++k)
+		for (int i = 0; i < iMax; ++i)
 		{
-			for (int m = k + 1; m < mMax; ++m)
+			for (int j = i + 1; j < jMax; ++j)
 			{
-				for (int n = m + 1; n < nMax; ++n)
+				vector<int> scoreM(6);
+				vector<int> scoreP(6);
+				scoreM[0] = i;
+				scoreM[1] = j;
+				for (int k = j + 1; k < kMax; ++k)
 				{
-					vector<vector<string> > statsM;
-					vector<vector<string> > statsP;
-					vector<string> titles;
-					titles.push_back("Score");
-					titles.push_back("ALL_W");
-					titles.push_back("ALL_X");
-					titles.push_back("ALL_Y");
-					titles.push_back("ALL_Z");
-					titles.push_back("ALL_A");
-					titles.push_back("ALL_B");
-					titles.push_back("ALL_C");
-					statsM.push_back(titles);
-					statsP.push_back(titles);
-					try
+					scoreM[2] = k;
+					for (int m = k + 1; m < mMax; ++m)
 					{
-						++game;
-						ReadStrategy strat1(strats[i]);
-						strat1.OpenFile();
-						ReadStrategy strat2(strats[j]);
-						strat2.OpenFile();
-						ReadStrategy strat3(strats[k]);
-						strat3.OpenFile();
-						ReadStrategy strat4(strats[m]);
-						strat4.OpenFile();
-						ReadStrategy strat5(strats[n]);
-						strat5.OpenFile();
+						scoreM[3] = m;
+						for (int n = m + 1; n < nMax; ++n)
+						{
+							Gang* M = new Gang;
+							Gang* P = new Gang;
 
-						M = new Gang(strat1, strat2, strat3, strat4, strat5);
-						P = ConstructSecondGang(strats, i, j, k, m, n);
+							if (spy)
+							{
+								M->SetChangeFreq(prob);
+								P->SetChangeFreq(prob);
+							}
 
-						for (int q = 0; q < M->GetMaxIterations(); ++q)
-							Game(*M, *P);
+							scoreM[4] = n;
+							vector<vector<string> > statsM;
+							vector<vector<string> > statsP;
+							vector<string> titles;
 
-						vector<string> tableLineM;
-						tableLineM.push_back(to_string(M->GetScore()));
-						tableLineM.push_back(to_string(M->GetAllW()));
-						tableLineM.push_back(to_string(M->GetAllX()));
-						tableLineM.push_back(to_string(M->GetAllY()));
-						tableLineM.push_back(to_string(M->GetAllZ()));
-						tableLineM.push_back(to_string(M->GetAllA()));
-						tableLineM.push_back(to_string(M->GetAllB()));
-						tableLineM.push_back(to_string(M->GetAllC()));
-						statsM.push_back(tableLineM);
+							if (!spy)
+							{
+								titles.push_back("Score");
+								titles.push_back("ALL_W");
+								titles.push_back("ALL_X");
+								titles.push_back("ALL_Y");
+								titles.push_back("ALL_Z");
+								titles.push_back("ALL_A");
+								titles.push_back("ALL_B");
+								titles.push_back("ALL_C");
+							}
+							else
+							{
+								titles.push_back("Score");
+								titles.push_back("Present");
+								titles.push_back("First Go");
+								titles.push_back("Second Go");
+								titles.push_back("Other Spy");
+								titles.push_back("Both Spies");
+							}
+							statsM.push_back(titles);
+							statsP.push_back(titles);
+							try
+							{
+								++game;
 
-						vector<string> tableLineP;
-						tableLineP.push_back(to_string(P->GetScore()));
-						tableLineP.push_back(to_string(P->GetAllW()));
-						tableLineP.push_back(to_string(P->GetAllX()));
-						tableLineP.push_back(to_string(P->GetAllY()));
-						tableLineP.push_back(to_string(P->GetAllZ()));
-						tableLineP.push_back(to_string(P->GetAllA()));
-						tableLineP.push_back(to_string(P->GetAllB()));
-						tableLineP.push_back(to_string(P->GetAllC()));
-						statsP.push_back(tableLineP);
+								M->SetPrisonerStrats(strats[i], strats[j], strats[k], strats[m], strats[n]);
 
-						t.AddText("Gang 1:");
-						t.DrawTable(&statsM);
-						t.AddText("Gang 2:");
-						t.DrawTable(&statsP);
+								if (!control)
+									P = ConstructSecondGang(strats, i, j, k, m, n, scoreP);
+								else
+								{
+									P->SetPrisonerStrats(strats[10], strats[11], strats[12], strats[13], strats[14]);
+									for (int i = 0; i < 5; ++i)
+										scoreP[i] = 10 + i;
+								}
 
-						text = "Game " + to_string(game);
-						t.AddText(text);
-					}
-					catch (const invalid_argument& iae)
-					{
-						delete winners;
-						delete M;
-						delete P;
-						throw invalid_argument(iae.what());
+								int numSpies = ((float)spyProb / 100) * M->GetMaxIterations();
+								vector<int> makeSpy(numSpies);
+
+								int spies = 0;
+								if (spy)
+								{
+									while (spies != numSpies)
+									{
+										int buff = rand() % M->GetMaxIterations();
+										if (find(makeSpy.begin(), makeSpy.end(), buff) == makeSpy.end())
+										{
+											makeSpy[spies] = buff;
+											++spies;
+										}
+									}
+								}
+
+								for (int q = 0; q < M->GetMaxIterations(); ++q)
+								{
+									if (spyProb != 0)
+									{
+										if (find(makeSpy.begin(), makeSpy.end(), q) != makeSpy.end())
+										{
+											M->SetSpy();
+											P->SetSpy();
+										}
+									}
+									Game(*M, *P);
+								}
+
+								scoreM[5] = M->GetScore();
+								scoreP[5] = P->GetScore();
+								if (dispStats || printStats)
+								{
+									vector<string> tableLineM;
+									tableLineM.push_back(to_string(M->GetScore()));
+									vector<string> tableLineP;
+									tableLineP.push_back(to_string(P->GetScore()));
+									if (!spy)
+									{
+										tableLineM.push_back(to_string(M->GetAllW()));
+										tableLineM.push_back(to_string(M->GetAllX()));
+										tableLineM.push_back(to_string(M->GetAllY()));
+										tableLineM.push_back(to_string(M->GetAllZ()));
+										tableLineM.push_back(to_string(M->GetAllA()));
+										tableLineM.push_back(to_string(M->GetAllB()));
+										tableLineM.push_back(to_string(M->GetAllC()));
+
+										tableLineP.push_back(to_string(P->GetAllW()));
+										tableLineP.push_back(to_string(P->GetAllX()));
+										tableLineP.push_back(to_string(P->GetAllY()));
+										tableLineP.push_back(to_string(P->GetAllZ()));
+										tableLineP.push_back(to_string(P->GetAllA()));
+										tableLineP.push_back(to_string(P->GetAllB()));
+										tableLineP.push_back(to_string(P->GetAllC()));
+									}
+									else
+									{
+										tableLineM.push_back(to_string(spyProb));
+										tableLineM.push_back(to_string(M->GetAllS()));
+										tableLineM.push_back(to_string(M->GetAllT()));
+										tableLineM.push_back(to_string(M->GetAllU()));
+										tableLineM.push_back(to_string(M->GetAllV()));
+
+										tableLineP.push_back(to_string(spyProb));
+										tableLineP.push_back(to_string(P->GetAllS()));
+										tableLineP.push_back(to_string(P->GetAllT()));
+										tableLineP.push_back(to_string(P->GetAllU()));
+										tableLineP.push_back(to_string(P->GetAllV()));
+									}
+									statsM.push_back(tableLineM);
+									statsP.push_back(tableLineP);
+
+									if (dispStats)
+									{
+										t.HLine('+', '-');
+										string text = "Game " + to_string(game);
+										t.AddText(text);
+										text = "Gang 1: " + strats[i] + ' ' + strats[j] + ' ' + strats[k] + ' ' + strats[m] + ' ' + strats[n];
+										t.AddText(text);
+										if (spy)
+										{
+											text = "Chance of switching choice = " + to_string(prob);
+											t.AddText(text);
+										}
+										t.DrawTable(&statsM);
+										if (!control)
+										{
+											text = "Gang 2: " + strats[scoreP[4]] + ' ' + strats[scoreP[3]] + ' ' + strats[scoreP[2]] + ' ' + strats[scoreP[1]] + ' ' + strats[scoreP[0]];
+											t.AddText(text);
+											if (spy)
+											{
+												text = "Chance of switching choice = " + to_string(prob);
+												t.AddText(text);
+											}
+										}
+										else
+											t.AddText("Control Gang");
+										t.DrawTable(&statsP);
+									}
+									if (printStats)
+									{
+										string nameM = "stats";
+										string titleM;
+										for (int i = 0; i < 5; ++i)
+										{
+											titleM += strats[scoreM[i]];
+											titleM += ' ';
+											nameM += to_string(scoreM[i]);
+										}
+										nameM += ".txt";
+
+										string nameP = "stats";
+										string titleP;
+										for (int i = 0; i < 5; ++i)
+										{
+											titleP += strats[scoreP[i]];
+											titleP += ' ';
+											nameP += to_string(scoreP[i]);
+										}
+										nameP += ".txt";
+
+										t.PrintTable(nameM, &statsM, titleM);
+										t.PrintTable(nameP, &statsP, titleP);
+									}
+								}
+								allScores.push_back(scoreM);
+								if (!control)
+									allScores.push_back(scoreP);
+
+								delete M;
+								delete P;
+							}
+							catch (const invalid_argument& iae)
+							{
+								delete winners;
+								delete M;
+								delete P;
+								throw invalid_argument(iae.what());
+							}
+						}
 					}
 				}
 			}
 		}
 	}
 
-	delete M;
-	delete P;
+	vector<int> finalScores;
+
+	for (int i = 0; i < allScores.size(); ++i)
+		finalScores.push_back(allScores[i].back());
+
+	int winner = Min(finalScores);
+
+	t.AddText("The best strategy combination was: ");
+	string text = "";
+	for (auto it = allScores[winner].begin(); it != --allScores[winner].end(); ++it)
+	{
+		winners->push_back(strats[*it]);
+		text += strats[*it];
+		text += ' ';
+	}
+	t.AddText(text);
+
+	text = "With a score of " + to_string(allScores[winner].back());
+	t.AddText(text);
+
+	t.AddText("Continue...");
+	char exit;
+	cin >> exit;
+
 	return winners;
 }
 
@@ -569,10 +842,21 @@ void Game(T& A, T& B)
 					B.RegisterOutcome('X');
 				}
 				// if B MIXED
-				else
+				else if (AOutcome < 6)
 				{
 					A.RegisterOutcome('A');
 					B.RegisterOutcome('B');
+				}
+				// B discovered spy
+				else
+				{
+					A.RegisterOutcome('U');
+					// spy discovered on first attempt
+					if (BOutcome == 6)
+						B.RegisterOutcome('S');
+					// spy discovered on second attempt
+					else
+						B.RegisterOutcome('T');
 				}
 			}
 			// if A SILENCE
@@ -591,14 +875,25 @@ void Game(T& A, T& B)
 					B.RegisterOutcome('W');
 				}
 				// if B MIXED
-				else
+				else if (AOutcome < 6)
 				{
 					A.RegisterOutcome('B');
 					B.RegisterOutcome('A');
 				}
+				// B discovered spy
+				else
+				{
+					A.RegisterOutcome('U');
+					// spy discovered on first attempt
+					if (BOutcome == 6)
+						B.RegisterOutcome('S');
+					// spy discovered on second attempt
+					else
+						B.RegisterOutcome('T');
+				}
 			}
 			// if A MIXED
-			else
+			else if (AOutcome < 6)
 			{
 				// if B had more BETRAYs
 				if ((BOutcome == 0) || (BOutcome > AOutcome))
@@ -606,11 +901,50 @@ void Game(T& A, T& B)
 					A.RegisterOutcome('B');
 					B.RegisterOutcome('A');
 				}
+				// if B and A had the same number of BETRAYs
+				else if (BOutcome == AOutcome)
+				{
+					A.RegisterOutcome('C');
+					B.RegisterOutcome('C');
+				}
 				// if B had fewer BETRAYs
-				else
+				else if (AOutcome < 6)
 				{
 					A.RegisterOutcome('A');
 					B.RegisterOutcome('B');
+				}
+				// B discovered spy
+				else
+				{
+					A.RegisterOutcome('U');
+					// spy discovered on first attempt
+					if (BOutcome == 6)
+						B.RegisterOutcome('S');
+					// spy discovered on second attempt
+					else
+						B.RegisterOutcome('T');
+				}
+
+			}
+			// A discovered spy
+			else
+			{
+				// B didn't discover spy
+				if (BOutcome < 6)
+				{
+					B.RegisterOutcome('U');
+					// spy discovered on first attempt
+					if (AOutcome == 6)
+						A.RegisterOutcome('S');
+					// spy discovered on second attempt
+					else
+						A.RegisterOutcome('T');
+				}
+				// B also discovered spy
+				else
+				{
+					A.RegisterOutcome('V');
+					B.RegisterOutcome('V');
 				}
 			}
 		}
@@ -641,7 +975,7 @@ void Game(T& A, T& B)
 	};
 }
 
-Gang * ConstructSecondGang(vector<string>& strats, const int i, const int j, const int k, const int m, const int n) throw (invalid_argument)
+Gang * ConstructSecondGang(vector<string>& strats, const int i, const int j, const int k, const int m, const int n, vector<int>& score) throw (invalid_argument)
 {
 	int index[5];
 
@@ -649,48 +983,43 @@ Gang * ConstructSecondGang(vector<string>& strats, const int i, const int j, con
 	for (int u = 9; u > n; --u)
 	{
 		index[ind] = u;
+		score[ind] = u;
 		++ind;
 	}
 	for (int u = n - 1; u > m; --u)
 	{
 		index[ind] = u;
+		score[ind] = u;
 		++ind;
 	}
 	for (int u = m - 1; u > k; --u)
 	{
 		index[ind] = u;
+		score[ind] = u;
 		++ind;
 	}
 	for (int u = k - 1; u > j; --u)
 	{
 		index[ind] = u;
+		score[ind] = u;
 		++ind;
 	}
 	for (int u = j - 1; u > i; --u)
 	{
 		index[ind] = u;
+		score[ind] = u;
 		++ind;
 	}
 	for (int u = i - 1; u >= 0; --u)
 	{
 		index[ind] = u;
+		score[ind] = u;
 		++ind;
 	}
 
 	try
 	{
-		ReadStrategy strat1(strats[i]);
-		strat1.OpenFile();
-		ReadStrategy strat2(strats[j]);
-		strat2.OpenFile();
-		ReadStrategy strat3(strats[k]);
-		strat3.OpenFile();
-		ReadStrategy strat4(strats[m]);
-		strat4.OpenFile();
-		ReadStrategy strat5(strats[n]);
-		strat5.OpenFile();
-
-		Gang* Second = new Gang(strat1, strat2, strat3, strat4, strat5);
+		Gang* Second = new Gang(strats[index[0]], strats[index[1]], strats[index[2]], strats[index[3]], strats[index[4]]);
 
 		return Second;
 	}
