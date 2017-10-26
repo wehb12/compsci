@@ -9,29 +9,45 @@
 
 using namespace std;
 
-class Terminal
+class Table
 {
 public:
-	Terminal() { ClearScreen(); }
+	Table() { }
+	~Table() { }
+	void HLine(char edge, char c, int lineWidth = 80);
+	void DrawTable(vector<vector<string> >* headings);
+	void PrintTable(string fileName, vector<vector<string> >* headings, string title = "");
+protected:
+	void TableHLine(char edge = '+', char c = '=');
+	void DrawColumns();
+	void FillColumn(string heading);
+	ostream* ostr;
+private:
+	inline void Forward() { cout << ' '; }
+	const int width = 80;
+	int numCols;
+	int columnWidth;
+	int space;
+	int tableWidth;
+};
+
+class Terminal : public Table
+{
+public:
+	Terminal() : Table() { ostr = &cout; ClearScreen(); }
 	~Terminal() { }
 	void ClearScreen();
 	inline void Forward() { cout << ' '; }
 	inline void Down() { cout << endl; }
-	void HLine(char edge, char c, int lineWidth = 80);
 	void Center(char edge, string text);
 	void TitleBox(string title);
 	void AddText(string text);
-	void DrawTable(vector<vector<string> >* headings);
 	bool GetResponse();
 	int GetNum();
 	float GetFloat();
 	string GetString();
 private:
-	void TableHLine(int space, int tableWidth, char edge = '+', char c = '=');
-	void DrawColumns(int columnWidth, int numCols);
-	void FillColumn(int columnWidth, string heading);
 	const int width = 80;
-	const int height = 80;
 };
 
 #ifdef _WIN32
@@ -64,21 +80,26 @@ void Terminal::AddText(string text)
 	HLine(' ', ' ');
 }
 
-void Terminal::DrawTable(vector<vector<string> >* headings)
+void Table::DrawTable(vector<vector<string> >* headings)
 {
-	int numCols = headings->begin()->size();
-	int columnWidth = width / numCols;
-	int space = (width - (columnWidth * numCols)) / 2;
-	int tableWidth = width - (space * 2);
+	ostr = &cout;
 
-	TableHLine(space, tableWidth);
+	numCols = headings->begin()->size();
+	columnWidth = width / numCols;
+	space = (width - (columnWidth * numCols)) / 2;
+	tableWidth = width - (space * 2);
+
+	TableHLine();
 	for (auto it = headings->begin(); it != headings->end(); ++it)
 	{
-		DrawColumns(columnWidth, numCols);
+		DrawColumns();
+
+		for (int i = 0; i < space; ++i)
+			*ostr << ' ';
 
 		for (auto it2 = it->begin(); it2 != it->end(); ++it2)
 		{
-			FillColumn(columnWidth, *it2);
+			FillColumn(*it2);
 
 			if (it2 != --it->end())
 				cout << ' ';
@@ -86,17 +107,57 @@ void Terminal::DrawTable(vector<vector<string> >* headings)
 				cout << '|' << endl;
 		}
 
-		DrawColumns(columnWidth, numCols);
+		DrawColumns();
 
 		if (it == --headings->end())
-			TableHLine(space, tableWidth);
+			TableHLine();
 		else
-			TableHLine(space, tableWidth, '+', '-');
+			TableHLine('+', '-');
 	}
 	cout << endl;
 }
 
-void Terminal::TableHLine(int space, int tableWidth, char edge, char c)
+void Table::PrintTable(string fileName, vector<vector<string> >* headings, string title)
+{
+	ofstream file(fileName);
+	ostr = &file;
+
+	if (title.size() != 0)
+		*ostr << title << endl;
+
+	numCols = headings->begin()->size();
+	columnWidth = width / numCols;
+	space = (width - (columnWidth * numCols)) / 2;
+	tableWidth = width - (space * 2);
+
+	TableHLine();
+	for (auto it = headings->begin(); it != headings->end(); ++it)
+	{
+		DrawColumns();
+
+		for (auto it2 = it->begin(); it2 != it->end(); ++it2)
+		{
+			FillColumn(*it2);
+
+			if (it2 != --it->end())
+				*ostr << ' ';
+			else
+				*ostr << '|' << endl;
+		}
+
+		DrawColumns();
+
+		if (it == --headings->end())
+			TableHLine();
+		else
+			TableHLine('+', '-');
+	}
+	*ostr << endl;
+
+	ostr = &cout;
+}
+
+void Table::TableHLine(char edge, char c)
 {
 	for (int i = 0; i < space; ++i)
 		Forward();
@@ -104,36 +165,38 @@ void Terminal::TableHLine(int space, int tableWidth, char edge, char c)
 	HLine(edge, c, tableWidth);
 }
 
-void Terminal::DrawColumns(int columnWidth, int numCols)
+void Table::DrawColumns()
 {
 	int adjust = 1;
+	for (int i = 0; i < space; ++i)
+		*ostr << ' ';
 	for (int j = 0; j < numCols; ++j)
 	{
-		cout << '|';
+		*ostr << '|';
 		if (j == (numCols - 1))
 			adjust = 2;
 		for (int i = 0; i < columnWidth - adjust; ++i)
-			cout << ' ';
+			*ostr << ' ';
 	}
-	cout << '|';
-	cout << endl;
+	*ostr << '|';
+	*ostr << endl;
 }
 
-void Terminal::FillColumn(int columnWidth, string heading)
+void Table::FillColumn(string heading)
 {
-	cout << '|';
+	*ostr << '|';
 	int gap = -1;
-	if (heading.size() <= (columnWidth - 2))
-		gap = (columnWidth - 2 - heading.size()) / 2;
+	if (heading.size() <= (columnWidth - 1))
+		gap = (columnWidth - 1 - heading.size()) / 2;
 	else if (heading.size() > (columnWidth - 2))
 		heading.assign(heading, 0, (columnWidth - 2));
-	for (int i = 0; i <= gap; ++i)
-		cout << ' ';
-	cout << heading;
-	if (heading.size() % 2)
+	for (int i = 0; i < gap; ++i)
+		*ostr << ' ';
+	*ostr << heading;
+	if ((columnWidth - 1 - heading.size()) % 2)
 		++gap;
 	for (int i = 0; i < gap - 1; ++i)
-		cout << ' ';
+		*ostr << ' ';
 }
 
 bool Terminal::GetResponse()
@@ -170,12 +233,12 @@ string Terminal::GetString()
 	return input;
 }
 
-void Terminal::HLine(char edge, char c, int lineWidth)
+void Table::HLine(char edge, char c, int lineWidth)
 {
-	cout << edge;
+	*ostr << edge;
 	for (int i = 0; i < (lineWidth - 2); ++i)
-		cout << c;
-	cout << edge << endl;
+		*ostr << c;
+	*ostr << edge << endl;
 }
 
 void Terminal::Center(char edge, string text)
