@@ -1,6 +1,7 @@
 // Will Hinds, Computer Games Engineering MSc - BST.h //
 // -------------------------------------------------- //
 // Contains class definitions for BST   	          //
+// Student ID: 170740805, Date: 27/10/17 10:00        //
 
 #pragma once
 
@@ -9,6 +10,7 @@
 
 using namespace std;
 
+// Templated node to store Comparable objects
 template <typename T>
 struct node
 {
