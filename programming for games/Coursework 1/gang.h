@@ -1,14 +1,22 @@
+// Will Hinds, Computer Games Engineering MSc - gang.h //
+// --------------------------------------------------- //
+// Contains Gang class with 5 prisoner members         //
+// Student ID: 170740805, Date: 27/10/17 10:00         //
+
 #pragma once
 
 #include "prisoner.h"
 
+// Gang class includes a vector of 5 prisoners
+// instantiate with 5 file ids for prisoners' strategies
 class Gang
 {
 public:
 	Gang(string one, string two, string three, string four, string five);
 	Gang();
-	~Gang() { }
-	void SetPrisonerStrats(string one, string two, string three, string four, string five);
+	Gang(Gang& cpy) { }
+	~Gang() { delete members; }
+	void SetPrisonerStrats(string one, string two, string three, string four, string five) throw (invalid_argument);
 	int Run();
 	void RegisterOutcome(char outcome);
 	inline int GetMaxIterations() { return maxIterations; }
@@ -41,7 +49,7 @@ private:
 	int leader;
 	float changeFreq;
 
-	Prisoner members[5];
+	vector<Prisoner>* members;
 };
 
 Gang::Gang(string one, string two, string three, string four, string five)
@@ -70,24 +78,33 @@ Gang::Gang()
 	changeFreq = 0;
 }
 
-void Gang::SetPrisonerStrats(string one, string two, string three, string four, string five)
+void Gang::SetPrisonerStrats(string one, string two, string three, string four, string five) throw (invalid_argument)
 {
-	ReadStrategy strat1(one);
-	strat1.OpenFile();
-	ReadStrategy strat2(two);
-	strat2.OpenFile();
-	ReadStrategy strat3(three);
-	strat3.OpenFile();
-	ReadStrategy strat4(four);
-	strat4.OpenFile();
-	ReadStrategy strat5(five);
-	strat5.OpenFile();
+	try
+	{
+		ReadStrategy strat1(one);
+		strat1.OpenFile();
+		ReadStrategy strat2(two);
+		strat2.OpenFile();
+		ReadStrategy strat3(three);
+		strat3.OpenFile();
+		ReadStrategy strat4(four);
+		strat4.OpenFile();
+		ReadStrategy strat5(five);
+		strat5.OpenFile();
 
-	members[0].SetStrat(strat1);
-	members[1].SetStrat(strat2);
-	members[2].SetStrat(strat3);
-	members[3].SetStrat(strat4);
-	members[4].SetStrat(strat5);
+		members = new vector<Prisoner>(5);
+
+		(*members)[0].SetStrat(strat1);
+		(*members)[1].SetStrat(strat2);
+		(*members)[2].SetStrat(strat3);
+		(*members)[3].SetStrat(strat4);
+		(*members)[4].SetStrat(strat5);
+	}
+	catch (const invalid_argument& iae)
+	{
+		throw invalid_argument(iae.what());
+	}
 }
 
 // returns 0 for all BETRAY and 1 for all SILENCE and -ve number for ERROR
@@ -99,34 +116,12 @@ void Gang::SetPrisonerStrats(string one, string two, string three, string four, 
 // returns 7 for spy caught on second guess
 int Gang::Run()
 {
+	// silences tracks how many members stayed silent
 	int silences = 0;
-
-	if (spy != 0)
-	{
-		SetLeader();
-		int guess = (rand() % 5) + 1;
-		if (IsSpy(guess))
-			return 6;
-
-		int remove = guess;
-		while ((remove == guess) || IsSpy(remove))
-			remove = (rand() % 5) + 1;
-
-		if (ChangeChoice())
-		{
-			int lastGuess = guess;
-			guess == remove;
-			while ((guess == remove) || (guess == lastGuess))
-				guess = (rand() % 5) + 1;
-
-			if (IsSpy(guess))
-				return 7;
-		}
-	}
 
 	for (int i = 0; i < 5; ++i)
 	{
-		int outcome = members[i].Run();
+		int outcome = (*members)[i].Run();
 		if (outcome >= 0)
 			silences += outcome;
 		else return outcome;
@@ -134,6 +129,31 @@ int Gang::Run()
 
 	if (spy != 0)
 	{
+		SetLeader();
+		// leader guesses 1 to 5
+		int guess = (rand() % 5) + 1;
+		if (IsSpy(guess))
+			return 6;
+
+		int remove = guess;
+		// remove a member that isn't spy or guess
+		while ((remove == guess) || IsSpy(remove))
+			remove = (rand() % 5) + 1;
+
+		// if leader changes choice
+		if (ChangeChoice())
+		{
+			int lastGuess = guess;
+			guess == remove;
+			// choose a member that isn't removed or last guess
+			while ((guess == remove) || (guess == lastGuess))
+				guess = (rand() % 5) + 1;
+
+			if (IsSpy(guess))
+				return 7;
+		}
+
+		// spy always chooses the minority team
 		if (silences > 2)
 			++silences;
 		else if (silences < 3)
@@ -148,10 +168,11 @@ int Gang::Run()
 
 void Gang::RegisterOutcome(char outcome)
 {
+	// set spy to zero
 	ResetSpy();
 	lastOutcome = outcome;
 	for (int i = 0; i < 5; ++i)
-		members[i].RegisterOutcome(outcome);
+		(*members)[i].RegisterOutcome(outcome);
 	
 	switch(outcome)	
 	{
