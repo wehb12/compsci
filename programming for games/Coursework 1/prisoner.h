@@ -1,3 +1,8 @@
+// Will Hinds, Computer Games Engineering MSc - prisoner.h //
+// ------------------------------------------------------- //
+// Contains Prisoner class                                 //
+// Student ID: 170740805, Date: 27/10/17 10:00             //
+
 #pragma once
 
 #include "strategy.h"
@@ -9,26 +14,27 @@ using namespace std;
 class Prisoner
 {
 public:
-	Prisoner(Strategy& str) { Init(str); }
-	Prisoner() {  }
-	Prisoner(Prisoner& cpy) {  }
+	Prisoner(Strategy& str) { Init(); *strat = str; }
 
-	int Run();
-	void RegisterOutcome(char outcome);
+	Prisoner() { Init(); }
+	Prisoner(Prisoner& cpy) {  }
+	~Prisoner() { delete strat;  }
+	virtual int Run();
+	virtual void RegisterOutcome(char outcome);
 	inline int GetMaxIterations() { return maxIterations; }
-	inline int GetScore() { return myScore; }
+	virtual inline int GetScore() { return myScore; }
 	inline int GetAllW() { return allOutcomes[0]; }
 	inline int GetAllX() { return allOutcomes[1]; }
 	inline int GetAllY() { return allOutcomes[2]; }
 	inline int GetAllZ() { return allOutcomes[3]; }
-	inline void SetStrat(Strategy& str) { strat = str; }
+	inline void SetStrat(Strategy& str) { *strat = str; }
 	Prisoner& operator=(Prisoner& rhs);
 private:
-	void Init(Strategy& str);
-	Strategy strat;
+	void Init();
+	Strategy* strat;
 	char lastOutcome;
 	// [W] [X] [Y] [Z] [A] [B] [C]
-	int allOutcomes[7];
+	int allOutcomes[11];
 	int iterations;
 	int myScore;
 	const int maxIterations = 200;
@@ -40,11 +46,11 @@ private:
 	int Sum(int arr[]);
 };
 
-void Prisoner::Init(Strategy& str)
+void Prisoner::Init()
 {
-	strat = str;
+	strat = new Strategy;
 	lastOutcome = '\0';
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 11; ++i)
 		allOutcomes[i] = 0;
 	iterations = 0;
 	myScore = 0;
@@ -57,7 +63,7 @@ int Prisoner::Run()
 		return -1;
 
 	unsigned int line = 0;
-	unsigned int fileLine = strat.GetLineNo(line);
+	unsigned int fileLine = strat->GetLineNo(line);
 	if (fileLine == -1)
 		return -4;
 	unsigned int word = 1;
@@ -73,6 +79,9 @@ int Prisoner::Run()
 		ALL_X,
 		ALL_Y,
 		ALL_Z,
+		ALL_A,
+		ALL_B,
+		ALL_C,
 		ITERATIONS,
 		MYSCORE,
 		LAST,
@@ -80,6 +89,9 @@ int Prisoner::Run()
 		X,
 		Y,
 		Z,
+		A,
+		B,
+		C,
 		NUMBER,
 		PLUS,
 		SUBTRACT,
@@ -100,29 +112,30 @@ int Prisoner::Run()
 	bool expectLast = false;
 	// [0] - ALL_W, [1] - ALL_X, [2] - ALL_Y, [3] - ALL_Z,
 	// [4] - ITERATIONS, [5] - MYSCORE, [6] - INTEGER
-	int lhs[7] = { 0, 0, 0, 0, 0, 0, 0 };
-	int rhs[7] = { 0, 0, 0, 0, 0, 0, 0 };
+	int lhs[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	int rhs[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 };
 	int compareOperator = 0; // 0 for =, 1 for >, 2 for <
 	char ifLast = '\0';
 	bool secondHalf = false;
 	bool minus = false;
 
 	BST<Integer> lineTree(line);
+	int code = 2;
 
 	while (1)
 	{
-		string buff = strat.GetInstr(fileLine, word);
+		string buff = strat->GetInstr(fileLine, word);
 
 		switch (Enumerate(buff))
 		{
 		case BETRAY:
-			return 0;
+			code = 0;
 			break;
 		case SILENCE:
-			return 1;
+			code = 1;
 			break;
 		case RANDOM:
-			return rand() % 2;
+			code = rand() % 2;
 			break;
 		case IF:
 			expectVariable = true;
@@ -149,13 +162,25 @@ int Prisoner::Run()
 			if (expectVariable)
 				AssignVariable(expectVariable, expectSymbol, minus, secondHalf, lhs, rhs, 3);
 			break;
-		case ITERATIONS:
+		case ALL_A:
 			if (expectVariable)
 				AssignVariable(expectVariable, expectSymbol, minus, secondHalf, lhs, rhs, 4);
 			break;
-		case MYSCORE:
+		case ALL_B:
 			if (expectVariable)
 				AssignVariable(expectVariable, expectSymbol, minus, secondHalf, lhs, rhs, 5);
+			break;
+		case ALL_C:
+			if (expectVariable)
+				AssignVariable(expectVariable, expectSymbol, minus, secondHalf, lhs, rhs, 6);
+			break;
+		case ITERATIONS:
+			if (expectVariable)
+				AssignVariable(expectVariable, expectSymbol, minus, secondHalf, lhs, rhs, 7);
+			break;
+		case MYSCORE:
+			if (expectVariable)
+				AssignVariable(expectVariable, expectSymbol, minus, secondHalf, lhs, rhs, 8);
 			break;
 		case LAST:
 			if (expectLast && !expectCompare)
@@ -186,6 +211,18 @@ int Prisoner::Run()
 			if (expectOutcome && !expectCompare)
 				ifLast = AssignOutcome(expectOutcome, expectGoto, expectLast, expectCompare, expectSymbol, 'Z');
 			break;
+		case A:
+			if (expectOutcome && !expectCompare)
+				ifLast = AssignOutcome(expectOutcome, expectGoto, expectLast, expectCompare, expectSymbol, 'A');
+			break;
+		case B:
+			if (expectOutcome && !expectCompare)
+				ifLast = AssignOutcome(expectOutcome, expectGoto, expectLast, expectCompare, expectSymbol, 'B');
+			break;
+		case C:
+			if (expectOutcome && !expectCompare)
+				ifLast = AssignOutcome(expectOutcome, expectGoto, expectLast, expectCompare, expectSymbol, 'C');
+			break;
 		case NUMBER:
 			if (expectLineNo)
 			{
@@ -195,12 +232,12 @@ int Prisoner::Run()
 					if (lastOutcome == ifLast)
 					{
 						fileLine = stoi(buff);
-						line = strat.GetActualLine(fileLine);
+						line = strat->GetActualLine(fileLine);
 					}
 					else
 					{
 						++line;
-						fileLine = strat.GetLineNo(line);
+						fileLine = strat->GetLineNo(line);
 					}
 				}
 				else
@@ -211,36 +248,36 @@ int Prisoner::Run()
 						if (Sum(lhs) == Sum(rhs))
 						{
 							fileLine = stoi(buff);
-							line = strat.GetActualLine(fileLine);
+							line = strat->GetActualLine(fileLine);
 						}
 						else
 						{
 							++line;
-							fileLine = strat.GetLineNo(line);
+							fileLine = strat->GetLineNo(line);
 						}
 						break;
 					case 1:
 						if (Sum(lhs) > Sum(rhs))
 						{
 							fileLine = stoi(buff);
-							line = strat.GetActualLine(fileLine);
+							line = strat->GetActualLine(fileLine);
 						}
 						else
 						{
 							++line;
-							fileLine = strat.GetLineNo(line);
+							fileLine = strat->GetLineNo(line);
 						}
 						break;
 					case 2:
 						if (Sum(lhs) < Sum(rhs))
 						{
 							fileLine = stoi(buff);
-							line = strat.GetActualLine(fileLine);
+							line = strat->GetActualLine(fileLine);
 						}
 						else
 						{
 							++line;
-							fileLine = strat.GetLineNo(line);
+							fileLine = strat->GetLineNo(line);
 						}
 						break;
 					}
@@ -328,20 +365,26 @@ int Prisoner::Run()
 		case EOL:
 			++line;
 			if (CheckForInfLoops(lineTree, line))
-				return -3;
+				code = -3;
 			word = 0;
 			break;
 		case EOF:
-			return -1;
+			code = -1;
 			break;
 		case ERROR:
-			return -2;
+			code = -2;
+			break;
+		default:
 			break;
 		}
 		++word;
+		if (code < 2)
+			return code;
 	}
 }
 
+// checks a BST with all the line number that have been visited stores
+// to see if a loop has been created
 bool Prisoner::CheckForInfLoops(BST<Integer>& tree, int leaf)
 {
 	if (tree.Find(tree.GetRoot(), leaf))
@@ -375,11 +418,11 @@ char Prisoner::AssignOutcome(bool& expectOutcome, bool& expectGoto, bool& expect
 void Prisoner::AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf, int lhs[], int rhs[], int i)
 {
 	int sum = 0;
-	if (i < 4)
+	if (i < 7)
 		sum = allOutcomes[i];
-	else if (i == 4)
+	else if (i == 7)
 		sum = iterations;
-	else if (i == 5)
+	else if (i == 8)
 		sum = myScore;
 
 	sym = true;
@@ -398,37 +441,46 @@ void Prisoner::AssignVariable(bool& var, bool& sym, bool& minus, bool secondHalf
 
 int Prisoner::Enumerate(string buff)
 {
-	if (buff.compare("BETRAY") == 0) return 0;
-	if (buff.compare("SILENCE") == 0) return 1;
-	if (buff.compare("RANDOM") == 0) return 2;
-	if (buff.compare("IF") == 0) return 3;
-	if (buff.compare("GOTO") == 0) return 4;
-	if (buff.compare(0, 12, "ALLOUTCOMES_") == 0)
-	{
-		if (buff.compare(12, 1, "W") == 0) return 5;
-		if (buff.compare(12, 1, "X") == 0) return 6;
-		if (buff.compare(12, 1, "Y") == 0) return 7;
-		if (buff.compare(12, 1, "Z") == 0) return 8;
-	}
-	if (buff.compare("ITERATIONS") == 0) return 9;
-	if (buff.compare("MYSCORE") == 0) return 10;
-	if (buff.compare("LASTOUTCOME") == 0) return 11;
-	if (buff.compare("W") == 0) return 12;
-	if (buff.compare("X") == 0) return 13;
-	if (buff.compare("Y") == 0) return 14;
-	if (buff.compare("Z") == 0) return 15;
+	int code = 0;
 	int first = 0;
-	if (buff.compare(0, 1, "-") == 0)
+	if (buff.compare("BETRAY") == 0) code = 0;
+	else if (buff.compare("SILENCE") == 0) code = 1;
+	else if (buff.compare("RANDOM") == 0) code = 2;
+	else if (buff.compare("IF") == 0) code = 3;
+	else if (buff.compare("GOTO") == 0) code = 4;
+	else if (buff.compare(0, 12, "ALLOUTCOMES_") == 0)
+	{
+		if (buff.compare(12, 1, "W") == 0) code = 5;
+		else if (buff.compare(12, 1, "X") == 0) code = 6;
+		else if (buff.compare(12, 1, "Y") == 0) code = 7;
+		else if (buff.compare(12, 1, "Z") == 0) code = 8;
+		else if (buff.compare(12, 1, "A") == 0) code = 9;
+		else if (buff.compare(12, 1, "B") == 0) code = 10;
+		else if (buff.compare(12, 1, "C") == 0) code = 11;
+	}
+	else if (buff.compare("ITERATIONS") == 0) code = 12;
+	else if (buff.compare("MYSCORE") == 0) code = 13;
+	else if (buff.compare("LASTOUTCOME") == 0) code = 14;
+	else if (buff.compare("W") == 0) code = 15;
+	else if (buff.compare("X") == 0) code = 16;
+	else if (buff.compare("Y") == 0) code = 17;
+	else if (buff.compare("Z") == 0) code = 18;
+	else if (buff.compare("A") == 0) code = 19;
+	else if (buff.compare("B") == 0) code = 20;
+	else if (buff.compare("C") == 0) code = 21;
+	else if (buff.compare(0, 1, "-") == 0)
 		first = 1;
-	if ((buff.compare(first, 1, "9") <= 0) && (buff.compare(first, 1, "0") >= 0)) return 16;
-	if (buff.compare("+") == 0) return 17;
-	if (buff.compare("-") == 0) return 18;
-	if (buff.compare("=") == 0) return 19;
-	if (buff.compare(">") == 0) return 20;
-	if (buff.compare("<") == 0) return 21;
-	if (buff.compare("EOL") == 0) return 22;
-	if (buff.compare("EOF") == 0) return 23;
-	return 24;
+	else if ((buff.compare(first, 1, "9") <= 0) && (buff.compare(first, 1, "0") >= 0)) code = 22;
+	else if (buff.compare("+") == 0) code = 23;
+	else if (buff.compare("-") == 0) code = 24;
+	else if (buff.compare("=") == 0) code = 25;
+	else if (buff.compare(">") == 0) code = 26;
+	else if (buff.compare("<") == 0) code = 27;
+	else if (buff.compare("EOL") == 0) code = 28;
+	else if (buff.compare("EOF") == 0) code = 29;
+	else
+		code = 30;
+	return code;
 }
 
 void Prisoner::RegisterOutcome(char outcome)
