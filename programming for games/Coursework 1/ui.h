@@ -1,6 +1,7 @@
 // Will Hinds, Computer Games Engineering MSc - UI.h //
 // ------------------------------------------------- //
 // Contains UI code                                  //
+// Student ID: 170740805, Date: 27/10/17 10:00       //
 
 #pragma once
 
@@ -50,6 +51,9 @@ private:
 	const int width = 80;
 };
 
+// system("cls") doesn't work on some consoles
+// the alternative ClearScreen() works on ANSI enabled consoles
+// makes the code more portable
 #ifdef _WIN32
 void Terminal::ClearScreen()
 {
@@ -102,9 +106,9 @@ void Table::DrawTable(vector<vector<string> >* headings)
 			FillColumn(*it2);
 
 			if (it2 != --it->end())
-				cout << ' ';
+				*ostr << ' ';
 			else
-				cout << '|' << endl;
+				*ostr << '|' << endl;
 		}
 
 		DrawColumns();
@@ -130,10 +134,15 @@ void Table::PrintTable(string fileName, vector<vector<string> >* headings, strin
 	space = (width - (columnWidth * numCols)) / 2;
 	tableWidth = width - (space * 2);
 
+	for (int i = 0; i < space; ++i)
+		*ostr << ' ';
 	TableHLine();
 	for (auto it = headings->begin(); it != headings->end(); ++it)
 	{
 		DrawColumns();
+
+		for (int i = 0; i < space; ++i)
+			*ostr << ' ';
 
 		for (auto it2 = it->begin(); it2 != it->end(); ++it2)
 		{
@@ -147,6 +156,8 @@ void Table::PrintTable(string fileName, vector<vector<string> >* headings, strin
 
 		DrawColumns();
 
+		for (int i = 0; i < space; ++i)
+			*ostr << ' ';
 		if (it == --headings->end())
 			TableHLine();
 		else
