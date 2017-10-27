@@ -1,6 +1,7 @@
 // Will Hinds, Computer Games Engineering MSc - strategy.h //
 // ------------------------------------------------------- //
 // Contains class definitions for Strategy classes         //
+// Student ID: 170740805, Date: 27/10/17 10:00             //
 
 #pragma once
 
@@ -14,12 +15,13 @@
 
 using namespace std;
 
+// strategy inherits from Comparable so it can be stored in a BST
 class Strategy : public Comparable
 {
 public:
-	inline Strategy(const string txt) : name(txt), strat(new vector<vector<string> >(1)) { }
-	inline Strategy() : name("default"), strat(new vector<vector<string> >(1)) { }
-	inline Strategy(const Strategy& cpy) : name(cpy.name), strat(new vector<vector<string> >(1)) { }
+	inline Strategy(const string txt) : gang(false), name(txt), strat(new vector<vector<string> >(1)) { }
+	inline Strategy() : gang(false), name("default"), strat(new vector<vector<string> >(1)) { }
+	inline Strategy(const Strategy& cpy) : gang(false), name(cpy.name), strat(new vector<vector<string> >(1)) { }
 	~Strategy() { delete strat; }
 
 	friend ostream& operator<<(ostream& ostr, const Strategy& str);
@@ -30,9 +32,11 @@ public:
 	int GetLineNo(int line);
 	int GetActualLine(int fileLine);
 	virtual int CompareTo(const Comparable& rhs) override;
+	void SetGang(bool g) { gang = g; }
 protected:
 	string name;
 	vector<vector<string> >* strat;
+	bool gang;
 };
 
 class ReadStrategy : public Strategy
@@ -67,10 +71,11 @@ protected:
 	// boolean checks to ensure a strategy that makes sense is constructed, with no variable repeats
 	// values ares set to true if their variable has been printed before
 	// [0] - ALLOUTCOMES_W, [1] - ALLOUTCOMES_X, [2] - ALLOUTCOMES_Y, [3] - ALLOUTCOMES_Z,
-	// [4] - INTEGER, [5] - ITERATIONS, [6] - MYSCORE, [7] - =, < OR >
-	// [8] - Only one variable left, so if =, < OR > hasn't been, then print one
-	// [9] - All variables used, so terminate line
-	bool checks[10];
+	// [4] - INTEGER, [5] - ITERATIONS, [6] - MYSCORE,
+	// [7] - ALLOUTCOMES_A, [8] - ALLOUTCOMES_A, [9] - ALLOUTCOMES_A, [10] - =, < OR >
+	// [11] - Only one variable left, so if =, < OR > hasn't been, then print one
+	// [12] - All variables used, so terminate line
+	bool checks[13];
 	void ClearChecksLine();
 	void ComputeSum();
 };
@@ -140,6 +145,9 @@ int Strategy::GetLineNo(int line)
 	return -1;
 }
 
+// there is sometimes a discrepency between the line number in the file
+// and the actual line number
+// this returns the line number in the file
 int Strategy::GetActualLine(int fileLine)
 {
 	int i = 0;
@@ -153,6 +161,7 @@ int Strategy::GetActualLine(int fileLine)
 	return -1;
 }
 
+// overridden from the Comparable class
 int Strategy::CompareTo(const Comparable& rhs)
 {
 	const Strategy *s = dynamic_cast<const Strategy*>(&rhs);
@@ -251,21 +260,25 @@ void CreateStrategy::SetFlag(int flagNum)
 	ComputeSum();
 }
 
+// calculate the only one variable left and no variables flags
 void CreateStrategy::ComputeSum()
 {
 	int sum = 0;
-	for (int i = 0; i < 7; ++i)
+	int max = 7;
+	if (gang)
+		max = 10;
+	for (int i = 0; i < max; ++i)
 		if (checks[i])
 			++sum;
-	if (sum == 6)
-		checks[8] = true;
-	else if (sum == 7)
-		checks[9] = true;
+	if (sum == (max - 1))
+		checks[11] = true;
+	else if (sum == max)
+		checks[12] = true;
 }
 
 void CreateStrategy::ClearChecksLine()
 {
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 13; ++i)
 		checks[i] = false;
 }
 
