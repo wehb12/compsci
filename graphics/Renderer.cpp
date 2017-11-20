@@ -1,77 +1,18 @@
 #include "Renderer.h"
 
-Renderer::Renderer(Window & parent) : OGLRenderer(parent)
+Renderer::Renderer(Window &parent) : OGLRenderer(parent)
 {
 	camera = new Camera(15.0f, -60.0f, 0.0f, Vector3(1600, 200, 3500));
-	quad = Mesh::GenerateQuad();
-
-	reflectShader = new Shader("../../Shaders/BumpVertex.glsl", "../../Shaders/reflectFragment.glsl");
-	skyboxShader = new Shader("../../Shaders/skyboxVertex.glsl", "../../Shaders/skyboxFragment.glsl");
-	lightShader = new Shader("../../Shaders/BumpVertex.glsl", "../../Shaders/BumpFragment.glsl");
-	mirrorShader = new Shader("../../Shaders/BumpVertex.glsl", "../../Shaders/MirrorFragment.glsl");
-
-	if (!reflectShader->LinkProgram() || !skyboxShader->LinkProgram() || !lightShader->LinkProgram() || !mirrorShader->LinkProgram())
-		return;
 
 	root = new SceneNode();
-	heightMap = new HeightMap("../../Textures/terrain.raw");
-	root->SetMesh(heightMap);
-	root->SetBoundingRadius(7500.0f);
 
-	heightMap->SetTexture1(SOIL_load_OGL_texture("../../Textures/mud.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	heightMap->SetTexture2(SOIL_load_OGL_texture("../../Textures/snow.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	heightMap->SetBumpMap(SOIL_load_OGL_texture("../../Textures/mud_Normal.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	heightMap->SetSpecMap(SOIL_load_OGL_texture("../../Textures/mud_Specular.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	heightMap->SetGlossMap(SOIL_load_OGL_texture("../../Textures/mud_Gloss.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	if (!root->GetMesh()->GetTexture1() || !root->GetMesh()->GetTexture2() || !root->GetMesh()->GetBumpMap())
-		return;
-	SetTextureRepeating(heightMap->GetTexture1(), true);
-	SetTextureRepeating(heightMap->GetTexture2(), true);
-	SetTextureRepeating(heightMap->GetBumpMap(), true);
+	for (int i = 0; i < NUM_SCENES; ++i)
+		scene[i] = new Scene(root, this);
 
-	quad->SetTexture1(SOIL_load_OGL_texture("../../Textures/water2.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	if (!quad->GetTexture1())
+	if (!GenerateMountainScene(*scene[0]))
 		return;
 
-	SetTextureRepeating(quad->GetTexture1(), true);
-
-	SceneNode* s = new SceneNode(quad);
-	root->AddChild(s);
-	s->SetBoundingRadius(10000.0f);
-
-	cubeMap2 = SOIL_load_OGL_cubemap("../../Textures/snowy_west.jpg", "../../Textures/snowy_east.jpg",
-		"../../Textures/snowy_up.jpg", "../../Textures/snowy_down.jpg",
-		"../../Textures/snowy_south.jpg", "../../Textures/snowy_north.jpg",
-		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO);
-	//snow cube map from https://gamebanana.com/textures/1951
-
-	cubeMap = SOIL_load_OGL_cubemap("../../Textures/rusted_west.jpg", "../../Textures/rusted_east.jpg",
-		"../../Textures/rusted_up.jpg", "../../Textures/rusted_down.jpg",
-		"../../Textures/rusted_south.jpg", "../../Textures/rusted_north.jpg",
-		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO);
-
-	if (!cubeMap || !cubeMap2)
-		return;
-
-	//for (int i = 0; i < 4; ++i)
-	//{
-	//	int x = i % 2;
-	//	int z = i / 2;
-	//	if (i != 3)
-	//		light[i] = new Light(Vector3((x * (RAW_HEIGHT * HEIGHTMAP_X / 2.0f) + (RAW_HEIGHT * HEIGHTMAP_X / 4.0f)), 500.0f,
-	//		(z * (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f) + (RAW_HEIGHT * HEIGHTMAP_Z / 4.0f))),
-	//			Vector4(1, 1, 1, 1), 0.1f,//(RAW_WIDTH * HEIGHTMAP_X) / 2.0f,
-	//			Vector4(1, 1, 1, 1));
-	//	else
-	light/*[i]*/ = new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 500.0f, -(RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
-		Vector4(1, 1, 1, 1), 2000.0f,
-		Vector4(1, 1, 1, 1), 1,
-		Vector3(-1, 2, -1), 40.0f);
-	//}
-
-	waterRotate = 0.0f;
-
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+	currentScene = 0;
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -85,188 +26,141 @@ Renderer::Renderer(Window & parent) : OGLRenderer(parent)
 Renderer ::~Renderer(void)
 {
 	delete root;
-	delete heightMap;
 	delete camera;
-	delete quad;
-	delete reflectShader;
-	delete lightShader;
-	delete skyboxShader;
 	currentShader = 0;
-	//for (int i = 0; i < 4; ++i)
-	delete light/*[i]*/;
+	//delete[] scene;
 }
 
-void Renderer::UpdateScene(float msec) {
-	camera->UpdateCamera(msec);
-	viewMatrix = camera->BuildViewMatrix();
-	frameFrustum.FromMatrix(projMatrix * viewMatrix);
-	waterRotate += msec / 10000.0f;
-
-	//root->Update(msec);
-}
-
-void Renderer::BuildNodeLists(SceneNode* from)
+bool Renderer::GenerateMountainScene(Scene &scene)
 {
-	if (frameFrustum.InsideFrustum(*from))
-	{
-		Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
-		from->SetCameraDistance(Vector3::Dot(dir, dir));
+	root->AddChild(&scene);
+	Mesh* quad = Mesh::GenerateQuad();
 
-		if (from->GetColour().w < 1.0f)
-			transparentNodeList.push_back(from);
-		else
-			nodeList.push_back(from);
+	//cubeMap
+	scene.SetAltCubeMap(SOIL_load_OGL_cubemap("../../Textures/ame_iceflats/iceflats_bk.tga", "../../Textures/ame_iceflats/iceflats_ft.tga",
+		"../../Textures/ame_iceflats/iceflats_up.tga", "../../Textures/ame_iceflats/iceflats_dn.tga",
+		"../../Textures/ame_iceflats/iceflats_lf.tga", "../../Textures/ame_iceflats/iceflats_rt.tga",
+		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO));
+	//snow cube map from www.custommapmakers.org/skyboxes
 
-		for (vector<SceneNode*>::const_iterator i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i)
-			BuildNodeLists((*i));
-	}
+	scene.SetCubeMap(SOIL_load_OGL_cubemap("../../Textures/rusted_west.jpg", "../../Textures/rusted_east.jpg",
+		"../../Textures/rusted_up.jpg", "../../Textures/rusted_down.jpg",
+		"../../Textures/rusted_south.jpg", "../../Textures/rusted_north.jpg",
+		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, SOIL_FLAG_POWER_OF_TWO));
+
+	if (!scene.GetAltCubeMap() || !scene.GetCubeMap())
+		return false;
+
+	scene.SetShader(new Shader("../../Shaders/skyboxVertex.glsl", "../../Shaders/skyboxFragment.glsl"));
+	if (!scene.GetShader()->LinkProgram())
+		return false;
+	scene.SetMesh(quad);
+	//cubemap
+
+	//heightMap
+	HeightMap* heightMap = new HeightMap("../../Textures/grandcanyon.data");
+
+	heightMap->SetTexture(SOIL_load_OGL_texture("../../Textures/mud.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	//heightMap->SetSnowTex(SOIL_load_OGL_texture("../../Textures/snow.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	heightMap->SetBumpMap(SOIL_load_OGL_texture("../../Textures/mud_Normal.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	heightMap->SetSpecMap(SOIL_load_OGL_texture("../../Textures/mud_Specular.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	heightMap->SetGlossMap(SOIL_load_OGL_texture("../../Textures/mud_Gloss.jpg ", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	if (!heightMap->GetTexture())
+		return false;
+	if (!heightMap->GetBumpMap())
+		return false;
+	if (!heightMap->GetSpecMap())
+		return false;
+	if (!heightMap->GetGlossMap())
+		return false;
+	SetTextureRepeating(heightMap->GetTexture(), true);
+	SetTextureRepeating(heightMap->GetBumpMap(), true);
+
+	SceneNode* sHeightMap = new SceneNode(heightMap, Vector4(1, 1, 1, 1));
+	sHeightMap->SetHeightMap(heightMap);
+	sHeightMap->SetBoundingRadius(15000.0f);
+	sHeightMap->SetShader(new Shader("../../Shaders/BumpVertex.glsl", "../../Shaders/BumpFragment.glsl"));
+	scene.AddChild(sHeightMap);
+	if (!sHeightMap->GetShader()->LinkProgram())
+		return false;
+	//heightMap
+
+	
+	//water
+	quad->SetTexture(SOIL_load_OGL_texture("../../Textures/water2.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+	if (!quad->GetTexture())
+		return false;
+
+	SetTextureRepeating(quad->GetTexture(), true);
+
+	float heightX = (RAW_WIDTH * HEIGHTMAP_X / 2.0f);
+	float heightY = 256 * HEIGHTMAP_Y / 10.0f;
+	float heightZ = (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f);
+
+	Matrix4 tempModelMatrix = Matrix4::Translation(Vector3(heightX, heightY, heightZ)) *
+				Matrix4::Scale(Vector3(heightX, 1, heightZ)) *
+				Matrix4::Rotation(90, Vector3(1.0f, 0.0f, 0.0f));
+
+	SceneNode* sWater = new SceneNode(quad, Vector4(1, 1, 1, 1));
+	sWater->SetTransform(tempModelMatrix);
+	sWater->SetUseOffset();
+	sWater->SetBoundingRadius(15000.0f);
+	sWater->SetOffset(0.0f);
+	sWater->MakeTransparent();
+	sWater->SetShader(new Shader("../../Shaders/BumpVertex.glsl", "../../Shaders/reflectFragment.glsl"));
+	sHeightMap->AddChild(sWater);
+	if (!sWater->GetShader()->LinkProgram())
+		return false;
+	//water
+	
+	//light
+	scene.AddLight(new Light(Vector3((RAW_HEIGHT * HEIGHTMAP_X / 2.0f), 500.0f, -(RAW_HEIGHT * HEIGHTMAP_Z / 2.0f)),
+		Vector4(1, 1, 1, 1), 2000.0f,
+		Vector4(1, 1, 1, 1), 1,
+		Vector3(-1, 2, -1), 40.0f));
+	//light
+	
+	//mirror
+	heightX = (RAW_WIDTH * HEIGHTMAP_X / 2.0f);
+	
+	heightY = 256 * HEIGHTMAP_Y / 3.0f;
+	
+	heightZ = (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f);
+	
+	tempModelMatrix = Matrix4::Translation(Vector3(heightX, heightY + 1000, heightZ)) *
+			Matrix4::Scale(Vector3(500, 800, 1));
+	SceneNode* sMirror = new SceneNode(quad, Vector4(1, 1, 1, 1));	//mirror is 100% reflective, does not need its own mesh/ texture
+	sMirror->SetShader(new Shader("../../Shaders/BumpVertex.glsl", "../../Shaders/MirrorFragment.glsl"));
+	sMirror->SetTransform(tempModelMatrix);
+	sMirror->SetBoundingRadius(RAW_WIDTH * HEIGHTMAP_X / 1.8f);
+	sMirror->SetUseAltHeightMap();
+	sHeightMap->AddChild(sMirror);
+	if (!sMirror->GetShader()->LinkProgram())
+		return false;
+	//mirror
 }
 
-void Renderer::SortNodeLists()
+void Renderer::UpdateScene(float msec)
 {
-	std::sort(transparentNodeList.begin(), transparentNodeList.end(), SceneNode::CompareByCameraDistance);
-	std::sort(nodeList.begin(), nodeList.end(), SceneNode::CompareByCameraDistance);
-}
-
-void Renderer::DrawNodes()
-{
-	for (vector<SceneNode*>::const_iterator i = nodeList.begin(); i != nodeList.end(); ++i)
-		DrawNode((*i));
-
-	for (vector<SceneNode*>::const_reverse_iterator i = transparentNodeList.rbegin(); i != transparentNodeList.rend(); ++i)
-		DrawNode((*i));
-}
-
-void Renderer::DrawNode(SceneNode* n)
-{
-	if (n->GetMesh())
-	{
-		Matrix4 transform = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, (float*)&transform);
-
-		glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-
-		n->Draw(*this);
-	}
+	//if (!splitScreen)
+	scene[currentScene]->Update(msec);
+	//else
+	// UpdateSplitScreens()
 }
 
 void Renderer::RenderScene()
 {
-	BuildNodeLists(root);
-	SortNodeLists();
-
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-	DrawSkybox();
-	DrawHeightmap();
-	DrawWater();
-	DrawMirror();
+	//DrawNodes();
+	for (int i = 0; i < NUM_SCENES; ++i)
+		scene[i]->RenderScene();
+
+	//DrawSkybox();
+	//DrawHeightmap();
+	//DrawWater();
+	//DrawMirror();
 
 	SwapBuffers();
-	ClearNodeLists();
-}
-
-void Renderer::DrawSkybox()
-{
-	glDepthMask(GL_FALSE);
-	glDisable(GL_CULL_FACE);
-	SetCurrentShader(skyboxShader);
-	UpdateShaderMatrices();
-
-	quad->Draw();
-
-	glUseProgram(0);
-	glDepthMask(GL_TRUE);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-}
-
-void Renderer::DrawHeightmap()
-{
-	SetCurrentShader(lightShader);
-	SetShaderLight(*light);
-
-	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "snowTex"), 1);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTex"), 2);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "specTex"), 3);
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "glossTex"), 4);
-
-	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "offset"), heightMap->GetOffset());
-
-	modelMatrix.ToIdentity();
-	textureMatrix.ToIdentity();
-
-	UpdateShaderMatrices();
-
-	heightMap->Draw();
-
-	glUseProgram(0);
-}
-
-void Renderer::DrawWater()
-{
-	SetCurrentShader(reflectShader);
-	SetShaderLight(*light);
-	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
-
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 3);
-
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-
-	float heightX = (RAW_WIDTH * HEIGHTMAP_X / 2.0f);
-
-	float heightY = 256 * HEIGHTMAP_Y / 3.0f;
-
-	float heightZ = (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f);
-
-	modelMatrix = Matrix4::Translation(Vector3(heightX, heightY, heightZ)) *
-		Matrix4::Scale(Vector3(heightX, 1, heightZ)) *
-		Matrix4::Rotation(90, Vector3(1.0f, 0.0f, 0.0f));
-
-	textureMatrix = Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
-		Matrix4::Rotation(waterRotate, Vector3(0.0f, 0.0f, 1.0f));
-
-	UpdateShaderMatrices();
-
-	quad->Draw();
-
-	glUseProgram(0);
-}
-
-void Renderer::DrawMirror()
-{
-	SetCurrentShader(mirrorShader);
-	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-
-	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 3);
-
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap2);
-
-	float heightX = (RAW_WIDTH * HEIGHTMAP_X / 2.0f);
-
-	float heightY = 256 * HEIGHTMAP_Y / 3.0f;
-
-	float heightZ = (RAW_HEIGHT * HEIGHTMAP_Z / 2.0f);
-
-	modelMatrix = Matrix4::Translation(Vector3(heightX, heightY + 1000, heightZ)) *
-		Matrix4::Scale(Vector3(500, 800, 1));
-
-	UpdateShaderMatrices();
-
-	quad->Draw();
-
-	glUseProgram(0);
-}
-
-void Renderer::ClearNodeLists()
-{
-	transparentNodeList.clear();
-	nodeList.clear();
+	//ClearNodeLists();
 }
