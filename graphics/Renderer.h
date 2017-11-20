@@ -3,9 +3,11 @@
 #include "../../nclgl/OGLRenderer.h"
 #include "../../nclgl/Camera.h"
 #include "../../nclgl/SceneNode.h"
-#include "../../nclgl/Frustum.h"
 #include "../../nclgl/HeightMap.h"
+#include "Scene.h"
 #include <algorithm>
+
+#define NUM_SCENES 1
 
 class Renderer : public OGLRenderer
 {
@@ -16,38 +18,14 @@ public:
 	virtual void UpdateScene(float msec);
 	virtual void RenderScene();
 
-	void SetHeightMapSnow(float offset) { heightMap->SetOffset(offset); }
-
+	int GetWidth() { return width; }
+	int GetHeight() { return height; }
 protected:
-	void BuildNodeLists(SceneNode* from);
-	void SortNodeLists();
-	void ClearNodeLists();
-	void DrawNodes();
-	void DrawNode(SceneNode * n);
 
-	void DrawHeightmap();
-	void DrawWater();
-	void DrawMirror();
-	void DrawSkybox();
-
-	Shader* lightShader;
-	Shader* reflectShader;
-	Shader* skyboxShader;
-	Shader* mirrorShader;
+	bool GenerateMountainScene(Scene &scene);
 
 	SceneNode*	root;
+	Scene*		scene[NUM_SCENES];
+	int			currentScene;
 	Camera*		camera;
-	HeightMap*	heightMap;
-	Mesh*		quad;
-	Light*		light;
-
-	GLuint		cubeMap;
-	GLuint		cubeMap2;
-
-	float		waterRotate;
-
-	Frustum		frameFrustum;
-
-	vector<SceneNode*> transparentNodeList;
-	vector<SceneNode*> nodeList;
 };
