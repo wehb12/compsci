@@ -1,37 +1,31 @@
-#pragma comment(lib, "nclgl.lib")
+#pragma once
 
-#include "../../nclgl/window.h"
-#include "Renderer.h"
+#include "../../nclgl/OGLRenderer.h"
+#include "../../nclgl/Camera.h"
+#include "../../nclgl/SceneNode.h"
+#include "../../nclgl/HeightMap.h"
+#include "Scene.h"
+#include <algorithm>
 
-int main()
+#define NUM_SCENES 1
+
+class Renderer : public OGLRenderer
 {
-	Window w("Cube Mapping! sky textures courtesy of http://www.hazelwhorley.com", 1280, 720, false);
-	if (!w.HasInitialised())
-		return -1;
+public:
+	Renderer(Window & parent);
+	virtual ~Renderer(void);
 
-	Renderer renderer(w);
-	if (!renderer.HasInitialised())
-		return -1;
+	virtual void UpdateScene(float msec);
+	virtual void RenderScene();
 
-	w.LockMouseToWindow(true);
-	w.ShowOSPointer(false);
+	int GetWidth() { return width; }
+	int GetHeight() { return height; }
+protected:
 
-	float offset = 0;
-	while (w.UpdateWindow() && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE))
-	{
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_UP))
-			offset += 0.01f;
-		if (Window::GetKeyboard()->KeyDown(KEYBOARD_DOWN))
-			offset -= 0.01f;
-		if (offset > 1.2f)
-			offset = 1.2f;
-		if (offset < -1.0f)
-			offset = -1.0f;
+	bool GenerateMountainScene(Scene &scene);
 
-		renderer.SetHeightMapSnow(offset);
-		renderer.UpdateScene(w.GetTimer()->GetTimedMS());
-		renderer.RenderScene();
-	}
-
-	return 0;
-}
+	SceneNode*	root;
+	Scene*		scene[NUM_SCENES];
+	int			currentScene;
+	Camera*		camera;
+};
